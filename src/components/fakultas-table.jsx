@@ -16,6 +16,7 @@ import {
   IconChevronsLeft,
   IconChevronsRight,
   IconSearch,
+  IconColumns,
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -29,6 +30,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,7 +47,11 @@ import {
 export function FakultasTable({ data, columns }) {
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
-  const [columnVisibility, setColumnVisibility] = React.useState({})
+  const [columnVisibility, setColumnVisibility] = React.useState({
+    id: false, // Hide ID column on smaller screens
+    created_at: false, // Hide created date on smaller screens
+    status: false, // Hide status on smaller screens
+  })
   const [rowSelection, setRowSelection] = React.useState({})
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -71,8 +82,8 @@ export function FakultasTable({ data, columns }) {
   return (
     <div className="w-full space-y-4">
       {/* Search and Filter Controls */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+        <div className="relative flex-1 max-w-full sm:max-w-sm">
           <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Cari fakultas..."
@@ -83,11 +94,48 @@ export function FakultasTable({ data, columns }) {
             className="pl-10"
           />
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto sm:ml-0">
+              <IconColumns className="mr-2 h-4 w-4" />
+              Kolom
+              <IconChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                const columnNames = {
+                  id: "ID",
+                  nama_fakultas: "Nama Fakultas",
+                  total_prodi: "Total Prodi",
+                  created_at: "Tanggal Dibuat",
+                  status: "Status",
+                  actions: "Aksi"
+                }
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {columnNames[column.id] || column.id}
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
+      <div className="rounded-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -134,17 +182,18 @@ export function FakultasTable({ data, columns }) {
               </TableRow>
             )}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
-        <div className="flex-1 text-sm text-muted-foreground">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 px-2">
+        <div className="text-sm text-muted-foreground text-center sm:text-left">
           Menampilkan {table.getFilteredRowModel().rows.length} dari {data.length} fakultas
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="rows-per-page" className="text-sm font-medium">
+        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-6 lg:space-x-8">
+          <div className="flex items-center justify-center space-x-2 sm:justify-start">
+            <Label htmlFor="rows-per-page" className="text-sm font-medium whitespace-nowrap">
               Baris per halaman
             </Label>
             <Select
@@ -165,14 +214,14 @@ export function FakultasTable({ data, columns }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex items-center justify-center text-sm font-medium">
             Halaman {table.getState().pagination.pageIndex + 1} dari{" "}
             {table.getPageCount()}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center justify-center space-x-2">
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
+              className="hidden h-8 w-8 p-0 md:flex"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
@@ -199,7 +248,7 @@ export function FakultasTable({ data, columns }) {
             </Button>
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex"
+              className="hidden h-8 w-8 p-0 md:flex"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >

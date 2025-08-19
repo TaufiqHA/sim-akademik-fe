@@ -61,10 +61,6 @@ export default function KaprodiDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Kaprodi</h1>
-        <p className="text-muted-foreground">
-          Selamat datang, {user?.nama} - Program Studi{" "}
-          {user?.prodi_id ? `ID: ${user.prodi_id}` : ""}
-        </p>
       </div>
 
       {/* Statistics Cards */}

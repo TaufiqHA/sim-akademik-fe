@@ -66,9 +66,6 @@ export default function DosenDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Dosen</h1>
-        <p className="text-muted-foreground">
-          Selamat datang, {user?.nama || "Dosen"}
-        </p>
       </div>
 
       {/* Statistics Cards */}

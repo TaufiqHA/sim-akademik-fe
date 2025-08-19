@@ -207,17 +207,17 @@ export default function FakultasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Daftar Fakultas</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Daftar Fakultas</h1>
           <p className="text-muted-foreground">
             Kelola data fakultas di universitas
           </p>
         </div>
-        
+
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <IconPlus className="mr-2 h-4 w-4" />
               Tambah Fakultas
             </Button>
@@ -257,7 +257,7 @@ export default function FakultasPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
