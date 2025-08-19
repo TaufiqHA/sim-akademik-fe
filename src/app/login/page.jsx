@@ -11,7 +11,7 @@ export default function Page() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.push("/dashboard")
+      router.replace("/dashboard")
     }
   }, [user, loading, router])
 

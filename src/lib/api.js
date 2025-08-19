@@ -47,14 +47,15 @@ async function fetchApi(endpoint, options = {}) {
       try {
         errorData = await response.json();
       } catch {
-        errorData = { message: response.statusText };
+        errorData = {};
       }
-
-      throw new ApiError(
-        errorData.message || `HTTP ${response.status}`,
-        response.status,
-        errorData
-      );
+      // Pastikan errorData selalu objek dan ada message fallback
+      if (typeof errorData !== "object" || errorData === null) {
+        errorData = {};
+      }
+      const message =
+        errorData.message || response.statusText || `HTTP ${response.status}`;
+      throw new ApiError(message, response.status, errorData);
     }
 
     const contentType = response.headers.get("content-type");
@@ -947,6 +948,16 @@ async function handleMockApi(endpoint, options = {}) {
   if (endpoint.startsWith("/fakultas")) {
     if (method === "GET") {
       return mockData.fakultas;
+    }
+    if (method === "POST") {
+      const newFakultas = {
+        id: Math.max(...mockData.fakultas.map((f) => f.id), 0) + 1,
+        ...JSON.parse(options.body || "{}"),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      mockData.fakultas.push(newFakultas);
+      return newFakultas;
     }
   }
 

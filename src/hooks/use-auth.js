@@ -13,25 +13,31 @@ export function AuthProvider({ children }) {
     const initAuth = async () => {
       let token = getStoredToken()
 
-      // Auto-login in development mode if no token exists
+      // Only auto-login in development mode if token exists or user is already on dashboard
       if (!token && process.env.NODE_ENV === 'development') {
-        const mockUser = {
-          id: 1,
-          nama: 'Mahasiswa Demo',
-          email: 'mahasiswa@demo.com',
-          role_id: 7, // Mahasiswa
-          fakultas_id: 1,
-          prodi_id: 1
-        }
+        // Check if we're on a page that should require authentication
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
+        const shouldAutoLogin = currentPath.startsWith('/dashboard') || currentPath === '/dashboard'
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('access_token', 'mock_dev_token')
-          localStorage.setItem('user', JSON.stringify(mockUser))
-        }
+        if (shouldAutoLogin) {
+          const mockUser = {
+            id: 1,
+            nama: 'Mahasiswa Demo',
+            email: 'mahasiswa@demo.com',
+            role_id: 7, // Mahasiswa
+            fakultas_id: 1,
+            prodi_id: 1
+          }
 
-        setUser(mockUser)
-        setLoading(false)
-        return
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', 'mock_dev_token')
+            localStorage.setItem('user', JSON.stringify(mockUser))
+          }
+
+          setUser(mockUser)
+          setLoading(false)
+          return
+        }
       }
 
       if (token) {

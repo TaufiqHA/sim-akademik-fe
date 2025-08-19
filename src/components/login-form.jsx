@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { login } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +18,7 @@ import { Label } from "@/components/ui/label";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
@@ -40,7 +42,15 @@ export function LoginForm({ className, ...props }) {
 
     try {
       const response = await login(formData.email, formData.password);
-      router.push("/dashboard");
+
+      // Update auth state immediately
+      if (response.user) {
+        setUser(response.user);
+
+        // Use replace to prevent back button issues and ensure immediate redirect
+        router.replace("/dashboard");
+      }
+
     } catch (err) {
       setError(err.message || "Login failed. Please try again.");
     } finally {
@@ -48,45 +58,6 @@ export function LoginForm({ className, ...props }) {
     }
   };
 
-  const handleTestLogin = (role) => {
-    // Mock user untuk testing
-    const mockUsers = {
-      kaprodi: {
-        id: 4,
-        nama: "Dr. Sarah Kaprodi",
-        email: "kaprodi@test.com",
-        role_id: 4,
-        prodi_id: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      dekan: {
-        id: 2,
-        nama: "Prof. Ahmad Dekan",
-        email: "dekan@test.com",
-        role_id: 2,
-        fakultas_id: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      superadmin: {
-        id: 1,
-        nama: "Admin System",
-        email: "admin@test.com",
-        role_id: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    };
-
-    const user = mockUsers[role];
-    if (user) {
-      // Simpan mock token dan user
-      localStorage.setItem("access_token", "mock_token_" + role);
-      localStorage.setItem("user", JSON.stringify(user));
-      router.push("/dashboard");
-    }
-  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -142,55 +113,8 @@ export function LoginForm({ className, ...props }) {
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Login"}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  type="button"
-                  disabled={isLoading}
-                >
-                  Login with Google
-                </Button>
               </div>
 
-              {/* Test Login Buttons */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <p className="text-sm text-gray-600 mb-3 text-center">Quick Test Login:</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={() => handleTestLogin('kaprodi')}
-                    disabled={isLoading}
-                  >
-                    Kaprodi
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={() => handleTestLogin('dekan')}
-                    disabled={isLoading}
-                  >
-                    Dekan
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={() => handleTestLogin('superadmin')}
-                    disabled={isLoading}
-                  >
-                    Admin
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <a href="#" className="underline underline-offset-4">
-                Sign up
-              </a>
             </div>
           </form>
         </CardContent>
