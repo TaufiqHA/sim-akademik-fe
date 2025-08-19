@@ -185,6 +185,7 @@ export function CrudManagement({
           </DialogHeader>
           <FormComponent
             item={editingItem}
+            allData={data}
             onSuccess={() => {
               setShowForm(false)
               loadData()

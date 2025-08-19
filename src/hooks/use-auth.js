@@ -21,12 +21,12 @@ export function AuthProvider({ children }) {
 
         if (shouldAutoLogin) {
           const mockUser = {
-            id: 1,
-            nama: 'Mahasiswa Demo',
-            email: 'mahasiswa@demo.com',
-            role_id: 7, // Mahasiswa
-            fakultas_id: 1,
-            prodi_id: 1
+            id: 2,
+            nama: 'Dekan Fakultas Teknik',
+            email: 'dekan@ft.example.com',
+            role_id: 2, // Dekan
+            fakultas_id: 3, // Fakultas Teknik
+            prodi_id: null
           }
 
           if (typeof window !== 'undefined') {

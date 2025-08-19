@@ -6,23 +6,40 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export function TahunAkademikForm({ item, onSuccess, onCancel }) {
+export function TahunAkademikForm({ item, allData = [], onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
-    nama_tahun: "",
-    tanggal_mulai: "",
-    tanggal_selesai: "",
+    tahun: "",
+    semester: "",
+    periode_krs_mulai: "",
+    periode_krs_selesai: "",
+    periode_nilai_mulai: "",
+    periode_nilai_selesai: "",
     is_aktif: false
   })
+
+  // Check if there's already an active academic year (excluding current item if editing)
+  const hasActiveYear = allData.some(tahun =>
+    tahun.is_aktif && (!item || tahun.id !== item.id)
+  )
+
+  // Show checkbox only if:
+  // 1. No active year exists, OR
+  // 2. Current item is already active (for editing)
+  const showStatusCheckbox = !hasActiveYear || (item && item.is_aktif)
 
   useEffect(() => {
     if (item) {
       setFormData({
-        nama_tahun: item.nama_tahun || "",
-        tanggal_mulai: item.tanggal_mulai ? item.tanggal_mulai.split('T')[0] : "",
-        tanggal_selesai: item.tanggal_selesai ? item.tanggal_selesai.split('T')[0] : "",
+        tahun: item.tahun || "",
+        semester: item.semester || "",
+        periode_krs_mulai: item.periode_krs_mulai ? item.periode_krs_mulai.split('T')[0] : "",
+        periode_krs_selesai: item.periode_krs_selesai ? item.periode_krs_selesai.split('T')[0] : "",
+        periode_nilai_mulai: item.periode_nilai_mulai ? item.periode_nilai_mulai.split('T')[0] : "",
+        periode_nilai_selesai: item.periode_nilai_selesai ? item.periode_nilai_selesai.split('T')[0] : "",
         is_aktif: item.is_aktif || false
       })
     }
@@ -45,21 +62,32 @@ export function TahunAkademikForm({ item, onSuccess, onCancel }) {
     if (error) setError("")
   }
 
+  const handleSelectChange = (name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
+    if (error) setError("")
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
     try {
-      if (!formData.nama_tahun || !formData.tanggal_mulai || !formData.tanggal_selesai) {
-        throw new Error("Semua field wajib diisi")
+      if (!formData.tahun || !formData.semester || !formData.periode_krs_mulai || !formData.periode_krs_selesai) {
+        throw new Error("Field tahun, semester, dan periode KRS wajib diisi")
       }
 
       const payload = {
-        nama_tahun: formData.nama_tahun,
-        tanggal_mulai: formData.tanggal_mulai,
-        tanggal_selesai: formData.tanggal_selesai,
-        is_aktif: formData.is_aktif
+        tahun: formData.tahun,
+        semester: formData.semester,
+        periode_krs_mulai: formData.periode_krs_mulai,
+        periode_krs_selesai: formData.periode_krs_selesai,
+        periode_nilai_mulai: formData.periode_nilai_mulai,
+        periode_nilai_selesai: formData.periode_nilai_selesai,
+        is_aktif: showStatusCheckbox ? formData.is_aktif : false
       }
 
       if (item) {
@@ -85,53 +113,102 @@ export function TahunAkademikForm({ item, onSuccess, onCancel }) {
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="nama_tahun">Nama Tahun Akademik *</Label>
+        <Label htmlFor="tahun">Tahun Akademik *</Label>
         <Input
-          id="nama_tahun"
-          name="nama_tahun"
-          value={formData.nama_tahun}
+          id="tahun"
+          name="tahun"
+          value={formData.tahun}
           onChange={handleInputChange}
           disabled={loading}
           required
-          placeholder="e.g., 2023/2024"
+          placeholder="e.g., 2024/2025"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="tanggal_mulai">Tanggal Mulai *</Label>
-        <Input
-          id="tanggal_mulai"
-          name="tanggal_mulai"
-          type="date"
-          value={formData.tanggal_mulai}
-          onChange={handleInputChange}
-          disabled={loading}
-          required
-        />
+        <Label htmlFor="semester">Semester *</Label>
+        <Select value={formData.semester} onValueChange={(value) => handleSelectChange("semester", value)} disabled={loading}>
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih semester" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="Ganjil">Ganjil</SelectItem>
+            <SelectItem value="Genap">Genap</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="tanggal_selesai">Tanggal Selesai *</Label>
-        <Input
-          id="tanggal_selesai"
-          name="tanggal_selesai"
-          type="date"
-          value={formData.tanggal_selesai}
-          onChange={handleInputChange}
-          disabled={loading}
-          required
-        />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="periode_krs_mulai">Periode KRS Mulai *</Label>
+          <Input
+            id="periode_krs_mulai"
+            name="periode_krs_mulai"
+            type="date"
+            value={formData.periode_krs_mulai}
+            onChange={handleInputChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="periode_krs_selesai">Periode KRS Selesai *</Label>
+          <Input
+            id="periode_krs_selesai"
+            name="periode_krs_selesai"
+            type="date"
+            value={formData.periode_krs_selesai}
+            onChange={handleInputChange}
+            disabled={loading}
+            required
+          />
+        </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="is_aktif"
-          checked={formData.is_aktif}
-          onCheckedChange={handleCheckboxChange}
-          disabled={loading}
-        />
-        <Label htmlFor="is_aktif">Status Aktif</Label>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="periode_nilai_mulai">Periode Nilai Mulai</Label>
+          <Input
+            id="periode_nilai_mulai"
+            name="periode_nilai_mulai"
+            type="date"
+            value={formData.periode_nilai_mulai}
+            onChange={handleInputChange}
+            disabled={loading}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="periode_nilai_selesai">Periode Nilai Selesai</Label>
+          <Input
+            id="periode_nilai_selesai"
+            name="periode_nilai_selesai"
+            type="date"
+            value={formData.periode_nilai_selesai}
+            onChange={handleInputChange}
+            disabled={loading}
+          />
+        </div>
       </div>
+
+      {showStatusCheckbox && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="is_aktif"
+            checked={formData.is_aktif}
+            onCheckedChange={handleCheckboxChange}
+            disabled={loading}
+          />
+          <Label htmlFor="is_aktif">Status Aktif</Label>
+        </div>
+      )}
+
+      {!showStatusCheckbox && (
+        <div className="p-3 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-md">
+          Tahun akademik ini akan dibuat dengan status tidak aktif karena sudah ada tahun akademik yang aktif.
+        </div>
+      )}
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" disabled={loading} className="flex-1">

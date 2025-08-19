@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { getUsers, getRoles, deleteUser } from "@/lib/api"
+import { getUsers, getRoles, deleteUser, getFakultas, getProdi } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,6 +28,8 @@ import { UserForm } from "@/components/user-form"
 export default function UsersPage() {
   const [users, setUsers] = useState([])
   const [roles, setRoles] = useState([])
+  const [fakultas, setFakultas] = useState([])
+  const [prodi, setProdi] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
@@ -42,16 +44,22 @@ export default function UsersPage() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [usersData, rolesData] = await Promise.all([
+      const [usersData, rolesData, fakultasData, prodiData] = await Promise.all([
         getUsers({ search: searchTerm, role_id: selectedRole }),
-        getRoles()
+        getRoles(),
+        getFakultas(),
+        getProdi()
       ])
       setUsers(Array.isArray(usersData) ? usersData : [])
       setRoles(Array.isArray(rolesData) ? rolesData : [])
+      setFakultas(Array.isArray(fakultasData) ? fakultasData : [])
+      setProdi(Array.isArray(prodiData) ? prodiData : [])
     } catch (err) {
       setError(err.message || "Failed to load data")
       setUsers([])
       setRoles([])
+      setFakultas([])
+      setProdi([])
     } finally {
       setLoading(false)
     }
@@ -193,6 +201,8 @@ export default function UsersPage() {
           <UserForm
             user={editingUser}
             roles={roles}
+            fakultas={fakultas}
+            prodi={prodi}
             onSuccess={() => {
               setShowUserForm(false)
               loadData()

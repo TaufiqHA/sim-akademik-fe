@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { getAllDosen } from "@/lib/api";
+import { getAllDosen, getProdi } from "@/lib/api";
 import {
   Card,
   CardContent,
@@ -32,39 +32,111 @@ import {
   IconUser,
   IconMail,
   IconSchool,
+  IconFilter,
 } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
 
 export default function DaftarDosenPage() {
   const { user } = useAuth();
-  const [dosen, setDosen] = useState([]);
+  const [allDosen, setAllDosen] = useState([]); // Store all data
+  const [filteredDosen, setFilteredDosen] = useState([]); // Store filtered data
+  const [prodiOptions, setProdiOptions] = useState([]); // Store prodi options
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [error, setError] = useState("");
 
+  // Initial load only
   useEffect(() => {
     if (user) {
       loadDosen();
+      loadProdi();
     }
   }, [user]);
+
+  // Client-side filter when search term or prodi selection changes
+  useEffect(() => {
+    applyFilter();
+  }, [searchTerm, selectedProdi, allDosen, prodiOptions]);
+
+  const handleFilter = () => {
+    applyFilter();
+  };
+
+  const handleReset = () => {
+    setSearchTerm("");
+    setSelectedProdi("all");
+  };
+
+  const applyFilter = () => {
+    if (!allDosen.length) return;
+
+    let filtered = [...allDosen];
+
+    // First, ensure lecturers belong to prodi within this faculty
+    if (prodiOptions.length > 0) {
+      const validProdiIds = prodiOptions.map(prodi => prodi.id);
+      filtered = filtered.filter((d) =>
+        d.prodi_id && validProdiIds.includes(d.prodi_id)
+      );
+    }
+
+    // Apply name search filter
+    if (searchTerm.trim()) {
+      filtered = filtered.filter((d) =>
+        d.nama && d.nama.toLowerCase().includes(searchTerm.toLowerCase().trim())
+      );
+    }
+
+    // Apply prodi filter if a specific prodi is selected
+    if (selectedProdi !== "all") {
+      filtered = filtered.filter((d) => d.prodi_id === parseInt(selectedProdi));
+    }
+
+    setFilteredDosen(filtered);
+  };
+
+  const loadProdi = async () => {
+    try {
+      if (user?.fakultas_id) {
+        const prodiData = await getProdi({ fakultas_id: user.fakultas_id });
+        console.log('Prodi data for fakultas_id', user.fakultas_id, ':', prodiData);
+        setProdiOptions(Array.isArray(prodiData) ? prodiData : []);
+      }
+    } catch (err) {
+      console.error("Error loading prodi:", err);
+      setProdiOptions([]);
+    }
+  };
 
   const loadDosen = async () => {
     try {
       setLoading(true);
       setError("");
 
-      // Use the getAllDosen function which already filters by role_id: 3
-      const dosenData = await getAllDosen({
-        search: searchTerm,
-        ...(user?.fakultas_id && { fakultas_id: user.fakultas_id }),
-      });
+      console.log('=== Loading Dosen ===');
+      console.log('Selected prodi:', selectedProdi);
+      console.log('User fakultas_id:', user?.fakultas_id);
 
-      // Ensure we have an array and filter only dosen (role_id === 3)
-      const dosenArray = Array.isArray(dosenData)
+      // Build parameters for API call - get all dosen, we'll filter by faculty client-side
+      const apiParams = {};
+
+      console.log('API params:', apiParams);
+
+      // Use the getAllDosen function which already filters by role_id: 6
+      const dosenData = await getAllDosen(apiParams);
+
+      console.log('Raw dosen data from API:', dosenData);
+
+      // Ensure we have an array and filter only dosen (role_id === 6)
+      let dosenArray = Array.isArray(dosenData)
         ? dosenData.filter((d) => d.role_id === 6)
         : [];
 
-      setDosen(dosenArray);
+      console.log('After role filter (role_id === 6):', dosenArray);
+
+      setAllDosen(dosenArray);
+      // Initial filtering will be handled by applyFilter useEffect
     } catch (err) {
       console.error("Error loading dosen:", err);
       setError(err.message || "Failed to load dosen data");
@@ -74,9 +146,7 @@ export default function DaftarDosenPage() {
     }
   };
 
-  const handleSearch = async () => {
-    await loadDosen();
-  };
+  // Remove handleSearch since useEffect handles filter changes automatically
 
 
   if (loading) {
@@ -108,7 +178,7 @@ export default function DaftarDosenPage() {
             <IconChalkboard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dosen.length}</div>
+            <div className="text-2xl font-bold">{filteredDosen.length}</div>
             <p className="text-xs text-muted-foreground">Dosen aktif</p>
           </CardContent>
         </Card>
@@ -121,12 +191,9 @@ export default function DaftarDosenPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {
-                new Set(dosen.filter((d) => d.prodi_id).map((d) => d.prodi_id))
-                  .size
-              }
+              {prodiOptions.length}
             </div>
-            <p className="text-xs text-muted-foreground">Prodi dengan dosen</p>
+            <p className="text-xs text-muted-foreground">Total program studi</p>
           </CardContent>
         </Card>
       </div>
@@ -136,30 +203,36 @@ export default function DaftarDosenPage() {
         <CardHeader>
           <CardTitle>Filter Dosen</CardTitle>
           <CardDescription>
-            Cari dan filter dosen berdasarkan kriteria tertentu
+            Cari nama dosen dan filter berdasarkan program studi
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Cari nama dosen..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-10"
               />
             </div>
             <Select value={selectedProdi} onValueChange={setSelectedProdi}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-[220px]">
                 <SelectValue placeholder="Semua Prodi" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Prodi</SelectItem>
-                <SelectItem value="1">Teknik Informatika</SelectItem>
-                <SelectItem value="2">Sistem Informasi</SelectItem>
-                <SelectItem value="3">Teknik Komputer</SelectItem>
+                {prodiOptions.map((prodi) => (
+                  <SelectItem key={prodi.id} value={prodi.id.toString()}>
+                    {prodi.nama_prodi}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" onClick={handleReset}>
+              Reset
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -185,7 +258,7 @@ export default function DaftarDosenPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {dosen.length === 0 ? (
+          {filteredDosen.length === 0 ? (
             <div className="text-center py-8">
               <IconChalkboard className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-semibold text-gray-900">
@@ -206,7 +279,7 @@ export default function DaftarDosenPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dosen.map((dosenItem) => (
+                {filteredDosen.map((dosenItem) => (
                   <TableRow key={dosenItem.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center">

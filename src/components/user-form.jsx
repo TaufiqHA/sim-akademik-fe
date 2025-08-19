@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-export function UserForm({ user, roles, onSuccess, onCancel }) {
+export function UserForm({ user, roles, fakultas = [], prodi = [], onSuccess, onCancel }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
@@ -24,6 +24,17 @@ export function UserForm({ user, roles, onSuccess, onCancel }) {
     fakultas_id: null,
     prodi_id: null
   })
+
+  // Roles that require prodi_id: Kaprodi, TU Prodi, Dosen, Mahasiswa
+  const rolesRequiringProdi = [3, 5, 6, 7]
+
+  // Check if selected role requires prodi
+  const selectedRoleRequiresProdi = formData.role_id ?
+    rolesRequiringProdi.includes(parseInt(formData.role_id)) : false
+
+  // Filter prodi based on selected fakultas
+  const filteredProdi = formData.fakultas_id ?
+    prodi.filter(p => p.fakultas_id === parseInt(formData.fakultas_id)) : []
 
   useEffect(() => {
     if (user) {
@@ -61,11 +72,17 @@ export function UserForm({ user, roles, onSuccess, onCancel }) {
     setLoading(true)
 
     try {
-      // Validation
-      if (!formData.nama || !formData.email || !formData.role_id) {
-        throw new Error("Nama, email, dan role wajib diisi")
+      // Basic validation for required fields
+      if (!formData.nama || !formData.email) {
+        throw new Error("Nama dan email wajib diisi")
       }
 
+      // Role validation - only required for new users or if role is being changed
+      if (!user && !formData.role_id) {
+        throw new Error("Role wajib diisi untuk user baru")
+      }
+
+      // Password validation - only required for new users
       if (!user && !formData.password) {
         throw new Error("Password wajib diisi untuk user baru")
       }
@@ -73,9 +90,13 @@ export function UserForm({ user, roles, onSuccess, onCancel }) {
       const payload = {
         nama: formData.nama,
         email: formData.email,
-        role_id: parseInt(formData.role_id),
         fakultas_id: formData.fakultas_id ? parseInt(formData.fakultas_id) : null,
         prodi_id: formData.prodi_id ? parseInt(formData.prodi_id) : null
+      }
+
+      // Only include role_id if it's provided (new user) or if it's being updated
+      if (formData.role_id) {
+        payload.role_id = parseInt(formData.role_id)
       }
 
       // Only include password if provided
@@ -147,12 +168,12 @@ export function UserForm({ user, roles, onSuccess, onCancel }) {
       </div>
 
       <div className="space-y-2">
-        <Label>Role *</Label>
+        <Label>Role {!user && "*"}</Label>
         <Select
           value={formData.role_id}
           onValueChange={handleSelectChange('role_id')}
           disabled={loading}
-          required
+          required={!user}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select role" />
@@ -168,34 +189,53 @@ export function UserForm({ user, roles, onSuccess, onCancel }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="fakultas_id">Fakultas ID (Optional)</Label>
-        <Input
-          id="fakultas_id"
-          name="fakultas_id"
-          type="number"
-          value={formData.fakultas_id || ""}
-          onChange={(e) => setFormData(prev => ({
+        <Label>Fakultas (Optional)</Label>
+        <Select
+          value={formData.fakultas_id?.toString() || ""}
+          onValueChange={(value) => setFormData(prev => ({
             ...prev,
-            fakultas_id: e.target.value ? parseInt(e.target.value) : null
+            fakultas_id: value ? parseInt(value) : null,
+            prodi_id: null // Reset prodi when fakultas changes
           }))}
           disabled={loading}
-        />
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Pilih Fakultas" />
+          </SelectTrigger>
+          <SelectContent>
+            {fakultas.map((f) => (
+              <SelectItem key={f.id} value={f.id.toString()}>
+                {f.nama_fakultas}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="prodi_id">Prodi ID (Optional)</Label>
-        <Input
-          id="prodi_id"
-          name="prodi_id"
-          type="number"
-          value={formData.prodi_id || ""}
-          onChange={(e) => setFormData(prev => ({
-            ...prev,
-            prodi_id: e.target.value ? parseInt(e.target.value) : null
-          }))}
-          disabled={loading}
-        />
-      </div>
+      {selectedRoleRequiresProdi && (
+        <div className="space-y-2">
+          <Label>Prodi *</Label>
+          <Select
+            value={formData.prodi_id?.toString() || ""}
+            onValueChange={(value) => setFormData(prev => ({
+              ...prev,
+              prodi_id: value ? parseInt(value) : null
+            }))}
+            disabled={loading || !formData.fakultas_id}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={!formData.fakultas_id ? "Pilih Fakultas terlebih dahulu" : "Pilih Prodi"} />
+            </SelectTrigger>
+            <SelectContent>
+              {filteredProdi.map((p) => (
+                <SelectItem key={p.id} value={p.id.toString()}>
+                  {p.nama_prodi}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" disabled={loading} className="flex-1">

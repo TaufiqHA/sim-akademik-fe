@@ -17,6 +17,7 @@ import {
   IconChevronsRight,
   IconSearch,
   IconColumns,
+  IconX,
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,7 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-export function FakultasTable({ data, columns }) {
+export function FakultasTable({ data, columns, meta }) {
   const [sorting, setSorting] = React.useState([])
   const [columnFilters, setColumnFilters] = React.useState([])
   const [columnVisibility, setColumnVisibility] = React.useState({
@@ -57,6 +58,19 @@ export function FakultasTable({ data, columns }) {
     pageIndex: 0,
     pageSize: 10,
   })
+  const [searchValue, setSearchValue] = React.useState("")
+
+  // Reset search when data changes (use data length to avoid infinite re-render)
+  React.useEffect(() => {
+    setSearchValue("")
+    setColumnFilters([])
+  }, [data.length])
+
+  // Clear search function
+  const clearSearch = () => {
+    setSearchValue("")
+    table.getColumn("nama_fakultas")?.setFilterValue("")
+  }
 
   const table = useReactTable({
     data,
@@ -70,6 +84,17 @@ export function FakultasTable({ data, columns }) {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
+    globalFilterFn: 'includesString',
+    filterFns: {
+      fuzzy: (row, columnId, value, addMeta) => {
+        const itemValue = row.getValue(columnId)
+        if (typeof itemValue === 'string') {
+          return itemValue.toLowerCase().includes(value.toLowerCase())
+        }
+        return false
+      },
+    },
+    meta,
     state: {
       sorting,
       columnFilters,
@@ -87,12 +112,26 @@ export function FakultasTable({ data, columns }) {
           <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Cari fakultas..."
-            value={(table.getColumn("nama_fakultas")?.getFilterValue() ?? "")}
-            onChange={(event) =>
-              table.getColumn("nama_fakultas")?.setFilterValue(event.target.value)
-            }
-            className="pl-10"
+            value={searchValue}
+            onChange={(event) => {
+              const value = event.target.value
+              setSearchValue(value)
+              // Apply filter with case-insensitive search
+              table.getColumn("nama_fakultas")?.setFilterValue(value)
+            }}
+            className="pl-10 pr-10"
           />
+          {searchValue && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 h-6 w-6 p-0 -translate-y-1/2 hover:bg-gray-100"
+              onClick={clearSearch}
+            >
+              <IconX className="h-4 w-4" />
+              <span className="sr-only">Clear search</span>
+            </Button>
+          )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -189,7 +228,18 @@ export function FakultasTable({ data, columns }) {
       {/* Pagination */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 px-2">
         <div className="text-sm text-muted-foreground text-center sm:text-left">
-          Menampilkan {table.getFilteredRowModel().rows.length} dari {data.length} fakultas
+          {searchValue ? (
+            <>
+              Menampilkan {table.getFilteredRowModel().rows.length} hasil pencarian dari {data.length} fakultas
+              {table.getFilteredRowModel().rows.length === 0 && (
+                <span className="block mt-1 text-orange-600">
+                  Tidak ada fakultas yang sesuai dengan pencarian "{searchValue}"
+                </span>
+              )}
+            </>
+          ) : (
+            <>Menampilkan {table.getFilteredRowModel().rows.length} dari {data.length} fakultas</>
+          )}
         </div>
         <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-6 lg:space-x-8">
           <div className="flex items-center justify-center space-x-2 sm:justify-start">

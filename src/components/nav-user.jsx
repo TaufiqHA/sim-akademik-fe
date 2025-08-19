@@ -3,10 +3,8 @@
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import {
-  IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
   IconUserCircle,
 } from "@tabler/icons-react"
 
@@ -39,6 +37,10 @@ export function NavUser() {
   const handleLogout = async () => {
     await logout()
     router.push("/login")
+  }
+
+  const handleAccount = () => {
+    router.push("/dashboard/account")
   }
 
   if (!user) return null
@@ -85,17 +87,9 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleAccount}>
                 <IconUserCircle />
                 Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

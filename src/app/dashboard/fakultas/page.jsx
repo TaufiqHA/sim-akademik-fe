@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
 import { FakultasTable } from "@/components/fakultas-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,7 +34,7 @@ import {
   IconCalendar,
   IconUsers
 } from "@tabler/icons-react"
-import { getFakultas, createFakultas, getProdi } from "@/lib/api"
+import { getFakultas, createFakultas, updateFakultas, deleteFakultas, getProdi } from "@/lib/api"
 import { toast } from "sonner"
 
 const fakultasColumns = [
@@ -97,42 +98,52 @@ const fakultasColumns = [
   {
     id: "actions",
     header: "Aksi",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-8 w-8 p-0"
-            size="icon">
-            <IconDotsVertical className="h-4 w-4" />
-            <span className="sr-only">Buka menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem>
-            <IconPencil className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <IconUsers className="mr-2 h-4 w-4" />
-            Lihat Prodi
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-600">
-            <IconTrash className="mr-2 h-4 w-4" />
-            Hapus
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row, table }) => {
+      const fakultas = row.original
+      const { handleEdit, handleDelete, handleViewProdi } = table.options.meta || {}
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              size="icon">
+              <IconDotsVertical className="h-4 w-4" />
+              <span className="sr-only">Buka menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={() => handleEdit?.(fakultas)}>
+              <IconPencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleViewProdi?.(fakultas)}>
+              <IconUsers className="mr-2 h-4 w-4" />
+              Lihat Prodi
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600" onClick={() => handleDelete?.(fakultas)}>
+              <IconTrash className="mr-2 h-4 w-4" />
+              Hapus
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
 
 export default function FakultasPage() {
   const { user } = useAuth()
+  const router = useRouter()
   const [fakultasData, setFakultasData] = useState([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editingFakultas, setEditingFakultas] = useState(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deletingFakultas, setDeletingFakultas] = useState(null)
   const [formData, setFormData] = useState({
     nama_fakultas: ""
   })
@@ -164,20 +175,23 @@ export default function FakultasPage() {
     }
 
     try {
-      await createFakultas({
-        nama_fakultas: formData.nama_fakultas.trim()
-      })
+      if (isEditMode && editingFakultas) {
+        await updateFakultas(editingFakultas.id, {
+          nama_fakultas: formData.nama_fakultas.trim()
+        })
+        toast.success("Fakultas berhasil diperbarui")
+      } else {
+        await createFakultas({
+          nama_fakultas: formData.nama_fakultas.trim()
+        })
+        toast.success("Fakultas berhasil ditambahkan")
+      }
 
-      setFormData({ nama_fakultas: "" })
-      setIsDialogOpen(false)
-
-      // Refresh data
+      resetForm()
       fetchFakultasData()
-
-      toast.success("Fakultas berhasil ditambahkan")
     } catch (error) {
-      console.error("Error creating fakultas:", error)
-      toast.error("Gagal menambahkan fakultas")
+      console.error("Error saving fakultas:", error)
+      toast.error(isEditMode ? "Gagal memperbarui fakultas" : "Gagal menambahkan fakultas")
     }
   }
 
@@ -187,6 +201,45 @@ export default function FakultasPage() {
       ...prev,
       [name]: value
     }))
+  }
+
+  const handleEdit = (fakultas) => {
+    setEditingFakultas(fakultas)
+    setFormData({ nama_fakultas: fakultas.nama_fakultas })
+    setIsEditMode(true)
+    setIsDialogOpen(true)
+  }
+
+  const handleDelete = (fakultas) => {
+    setDeletingFakultas(fakultas)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleViewProdi = (fakultas) => {
+    // Navigate to prodi page filtered by fakultas
+    router.push(`/dashboard/prodi?fakultas_id=${fakultas.id}`)
+  }
+
+  const confirmDelete = async () => {
+    if (!deletingFakultas) return
+
+    try {
+      await deleteFakultas(deletingFakultas.id)
+      setIsDeleteDialogOpen(false)
+      setDeletingFakultas(null)
+      fetchFakultasData()
+      toast.success("Fakultas berhasil dihapus")
+    } catch (error) {
+      console.error("Error deleting fakultas:", error)
+      toast.error("Gagal menghapus fakultas")
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({ nama_fakultas: "" })
+    setIsEditMode(false)
+    setEditingFakultas(null)
+    setIsDialogOpen(false)
   }
 
   if (loading) {
@@ -215,7 +268,10 @@ export default function FakultasPage() {
           </p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          if (!open) resetForm()
+          setIsDialogOpen(open)
+        }}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <IconPlus className="mr-2 h-4 w-4" />
@@ -225,9 +281,9 @@ export default function FakultasPage() {
           <DialogContent className="sm:max-w-[425px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Tambah Fakultas Baru</DialogTitle>
+                <DialogTitle>{isEditMode ? "Edit Fakultas" : "Tambah Fakultas Baru"}</DialogTitle>
                 <DialogDescription>
-                  Masukkan informasi fakultas yang akan ditambahkan.
+                  {isEditMode ? "Ubah informasi fakultas." : "Masukkan informasi fakultas yang akan ditambahkan."}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -244,14 +300,46 @@ export default function FakultasPage() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={resetForm}>
                   Batal
                 </Button>
                 <Button type="submit">
-                  Tambah Fakultas
+                  {isEditMode ? "Perbarui Fakultas" : "Tambah Fakultas"}
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Hapus</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus fakultas "{deletingFakultas?.nama_fakultas}"?
+                Tindakan ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteDialogOpen(false)
+                  setDeletingFakultas(null)
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={confirmDelete}
+              >
+                Hapus
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -322,6 +410,11 @@ export default function FakultasPage() {
           <FakultasTable
             data={fakultasData}
             columns={fakultasColumns}
+            meta={{
+              handleEdit,
+              handleDelete,
+              handleViewProdi
+            }}
           />
         </CardContent>
       </Card>

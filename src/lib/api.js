@@ -145,14 +145,58 @@ export async function getUsers(params = {}) {
 }
 
 export async function createUser(userData) {
-  return await fetchApi("/users", {
+  const res = await fetchApi("/users", {
     method: "POST",
     body: userData,
   });
+
+  return await res.data;
 }
 
 export async function getAllDosen(params = {}) {
-  return await getUsers({ ...params, role_id: 6 });
+  // Ambil semua user dengan role dosen
+  const users = await getUsers({ ...params, role_id: 6 });
+
+  // Filter users to include only those with role_id 6
+  let filteredUsers = users;
+  if (Array.isArray(users)) {
+    filteredUsers = users.filter((user) => user.role_id === 6);
+  } else if (users && Array.isArray(users.data)) {
+    filteredUsers = {
+      ...users,
+      data: users.data.filter((user) => user.role_id === 6),
+    };
+  }
+
+  // Jika hasilnya array, ambil profile_dosen untuk setiap user
+  if (Array.isArray(filteredUsers)) {
+    const usersWithProfile = await Promise.all(
+      filteredUsers.map(async (user) => {
+        try {
+          const profile = await getDosenProfile(user.id);
+          return { ...user, profile_dosen: profile };
+        } catch (e) {
+          return { ...user, profile_dosen: null };
+        }
+      })
+    );
+    return usersWithProfile;
+  }
+  // Jika hasilnya bukan array (misal: {data: [], meta: {}}), handle juga
+  if (filteredUsers && Array.isArray(filteredUsers.data)) {
+    const usersWithProfile = await Promise.all(
+      filteredUsers.data.map(async (user) => {
+        try {
+          const profile = await getDosenProfile(user.id);
+          return { ...user, profile_dosen: profile };
+        } catch (e) {
+          return { ...user, profile_dosen: null };
+        }
+      })
+    );
+    return { ...filteredUsers, data: usersWithProfile };
+  }
+  return filteredUsers;
 }
 
 export async function updateUser(id, userData) {
@@ -516,14 +560,21 @@ export async function getDistributionHistory(params = {}) {
 export async function createLecturerWithProfile(userData, profileData) {
   try {
     // First create the user account
-    const user = await createUser({
+    const res = await createUser({
       ...userData,
-      role_id: 5, // Dosen role
+      role_id: 6, // Dosen role
     });
+
+    const user = await res;
 
     // Then create the lecturer profile
     if (user && user.id) {
-      await createDosenProfile(user.id, profileData);
+      const res = await createDosenProfile(user.id, profileData);
+      if (res && res.data) {
+        user.profile_dosen = res.data; // Attach profile to user object
+      } else {
+        throw new ApiError("Failed to create lecturer profile", 500, {});
+      }
     }
 
     return user;
@@ -935,7 +986,19 @@ async function handleMockApi(endpoint, options = {}) {
   // Handle other endpoints with mock data
   if (endpoint.startsWith("/users")) {
     if (method === "GET") {
-      return mockData.users;
+      // Parse query parameters from endpoint
+      const url = new URL(endpoint, "http://localhost");
+      const params = Object.fromEntries(url.searchParams.entries());
+
+      console.log("Mock API - Users endpoint called with params:", params);
+      console.log("Mock API - Full endpoint:", endpoint);
+
+      // Apply filtering using the filterData function
+      const { filterData } = await import("./mock-data");
+      const filteredResult = filterData(mockData.users, params);
+
+      console.log("Mock API - Filtered result:", filteredResult);
+      return filteredResult;
     }
   }
 
@@ -959,6 +1022,36 @@ async function handleMockApi(endpoint, options = {}) {
       mockData.fakultas.push(newFakultas);
       return newFakultas;
     }
+    if (method === "PUT") {
+      const match = endpoint.match(/\/fakultas\/(\d+)/);
+      if (match) {
+        const id = parseInt(match[1]);
+        const index = mockData.fakultas.findIndex((f) => f.id === id);
+        if (index !== -1) {
+          const updatedData = JSON.parse(options.body || "{}");
+          mockData.fakultas[index] = {
+            ...mockData.fakultas[index],
+            ...updatedData,
+            updated_at: new Date().toISOString(),
+          };
+          return mockData.fakultas[index];
+        }
+        throw new ApiError("Fakultas tidak ditemukan", 404, {});
+      }
+    }
+    if (method === "DELETE") {
+      const match = endpoint.match(/\/fakultas\/(\d+)/);
+      if (match) {
+        const id = parseInt(match[1]);
+        const index = mockData.fakultas.findIndex((f) => f.id === id);
+        if (index !== -1) {
+          const deletedFakultas = mockData.fakultas[index];
+          mockData.fakultas.splice(index, 1);
+          return deletedFakultas;
+        }
+        throw new ApiError("Fakultas tidak ditemukan", 404, {});
+      }
+    }
   }
 
   if (endpoint.startsWith("/prodi")) {
@@ -970,6 +1063,79 @@ async function handleMockApi(endpoint, options = {}) {
   if (endpoint.startsWith("/tahun-akademik")) {
     if (method === "GET") {
       return { data: mockData.tahunAkademik };
+    }
+    if (method === "POST") {
+      const newTahunAkademik = {
+        id: Math.max(...mockData.tahunAkademik.map((t) => t.id), 0) + 1,
+        ...JSON.parse(options.body || "{}"),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // If setting as active, deactivate others
+      if (newTahunAkademik.is_aktif) {
+        mockData.tahunAkademik.forEach((item) => {
+          item.is_aktif = false;
+        });
+      }
+
+      mockData.tahunAkademik.push(newTahunAkademik);
+      return newTahunAkademik;
+    }
+    if (method === "PUT") {
+      const match = endpoint.match(/\/tahun-akademik\/(\d+)/);
+      if (match) {
+        const id = parseInt(match[1]);
+        const index = mockData.tahunAkademik.findIndex((t) => t.id === id);
+        if (index !== -1) {
+          const updatedData = JSON.parse(options.body || "{}");
+
+          // If setting as active, deactivate others
+          if (updatedData.is_aktif) {
+            mockData.tahunAkademik.forEach((item) => {
+              item.is_aktif = false;
+            });
+          }
+
+          mockData.tahunAkademik[index] = {
+            ...mockData.tahunAkademik[index],
+            ...updatedData,
+            updated_at: new Date().toISOString(),
+          };
+          return mockData.tahunAkademik[index];
+        }
+        throw new ApiError("Tahun akademik tidak ditemukan", 404, {});
+      }
+    }
+    if (method === "DELETE") {
+      const match = endpoint.match(/\/tahun-akademik\/(\d+)/);
+      if (match) {
+        const id = parseInt(match[1]);
+        const index = mockData.tahunAkademik.findIndex((t) => t.id === id);
+        if (index !== -1) {
+          const deletedTahunAkademik = mockData.tahunAkademik[index];
+          mockData.tahunAkademik.splice(index, 1);
+          return deletedTahunAkademik;
+        }
+        throw new ApiError("Tahun akademik tidak ditemukan", 404, {});
+      }
+    }
+    // Handle set active endpoint
+    const setAktifMatch = endpoint.match(/\/tahun-akademik\/(\d+)\/set-aktif/);
+    if (setAktifMatch && method === "POST") {
+      const id = parseInt(setAktifMatch[1]);
+      const index = mockData.tahunAkademik.findIndex((t) => t.id === id);
+      if (index !== -1) {
+        // Deactivate all others first
+        mockData.tahunAkademik.forEach((item) => {
+          item.is_aktif = false;
+        });
+        // Set the target as active
+        mockData.tahunAkademik[index].is_aktif = true;
+        mockData.tahunAkademik[index].updated_at = new Date().toISOString();
+        return mockData.tahunAkademik[index];
+      }
+      throw new ApiError("Tahun akademik tidak ditemukan", 404, {});
     }
   }
 

@@ -3,6 +3,7 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { ProtectedRoute } from "@/components/protected-route"
 import { SiteHeader } from "@/components/site-header"
+import { GlobalErrorHandler } from "@/components/error-boundary"
 import {
   SidebarInset,
   SidebarProvider,
@@ -11,27 +12,29 @@ import {
 export default function DashboardLayout({ children }) {
   return (
     <ProtectedRoute>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)"
-          }
-        }>
-        <AppSidebar variant="inset" />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <div className="px-4 lg:px-6">
-                  {children}
+      <GlobalErrorHandler>
+        <SidebarProvider
+          style={
+            {
+              "--sidebar-width": "calc(var(--spacing) * 72)",
+              "--header-height": "calc(var(--spacing) * 12)"
+            }
+          }>
+          <AppSidebar variant="inset" />
+          <SidebarInset>
+            <SiteHeader />
+            <div className="flex flex-1 flex-col">
+              <div className="@container/main flex flex-1 flex-col gap-2">
+                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                  <div className="px-4 lg:px-6">
+                    {children}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+          </SidebarInset>
+        </SidebarProvider>
+      </GlobalErrorHandler>
     </ProtectedRoute>
   );
 }

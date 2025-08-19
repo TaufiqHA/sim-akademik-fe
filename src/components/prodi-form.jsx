@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createProdi, updateProdi, getFakultas } from "@/lib/api"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/select"
 
 export function ProdiForm({ item, onSuccess, onCancel }) {
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [fakultas, setFakultas] = useState([])
@@ -22,6 +24,10 @@ export function ProdiForm({ item, onSuccess, onCancel }) {
     fakultas_id: ""
   })
 
+  // Check if user has a specific fakultas_id (not Super Admin)
+  const userHasFakultas = user?.fakultas_id
+  const isReadOnlyFakultas = !!userHasFakultas
+
   useEffect(() => {
     loadFakultas()
     if (item) {
@@ -29,8 +35,14 @@ export function ProdiForm({ item, onSuccess, onCancel }) {
         nama_prodi: item.nama_prodi || "",
         fakultas_id: item.fakultas_id?.toString() || ""
       })
+    } else if (userHasFakultas) {
+      // Pre-fill fakultas_id if user has one (Dekan, TU Fakultas)
+      setFormData(prev => ({
+        ...prev,
+        fakultas_id: user.fakultas_id.toString()
+      }))
     }
-  }, [item])
+  }, [item, user])
 
   const loadFakultas = async () => {
     try {
@@ -108,26 +120,28 @@ export function ProdiForm({ item, onSuccess, onCancel }) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Fakultas *</Label>
-        <Select
-          value={formData.fakultas_id}
-          onValueChange={handleSelectChange}
-          disabled={loading}
-          required
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pilih fakultas" />
-          </SelectTrigger>
-          <SelectContent>
-            {fakultas.map((f) => (
-              <SelectItem key={f.id} value={f.id.toString()}>
-                {f.nama_fakultas}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {!isReadOnlyFakultas && (
+        <div className="space-y-2">
+          <Label>Fakultas *</Label>
+          <Select
+            value={formData.fakultas_id}
+            onValueChange={handleSelectChange}
+            disabled={loading}
+            required
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih fakultas" />
+            </SelectTrigger>
+            <SelectContent>
+              {fakultas.map((f) => (
+                <SelectItem key={f.id} value={f.id.toString()}>
+                  {f.nama_fakultas}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="flex gap-2 pt-4">
         <Button type="submit" disabled={loading} className="flex-1">

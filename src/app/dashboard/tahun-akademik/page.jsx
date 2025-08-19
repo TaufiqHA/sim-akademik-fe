@@ -13,18 +13,19 @@ import { IconCheck } from "@tabler/icons-react";
 const columns = [
   { key: "id", label: "ID" },
   { key: "tahun", label: "Tahun Akademik", className: "font-medium" },
-  { key: "periode_krs_mulai", label: "Tanggal Mulai" },
-  { key: "periode_krs_selesai", label: "Tanggal Selesai" },
+  { key: "semester", label: "Semester" },
+  { key: "periode_krs_mulai", label: "KRS Mulai" },
+  { key: "periode_krs_selesai", label: "KRS Selesai" },
   { key: "status", label: "Status" },
 ];
 
 const formatRowData = (item) => ({
   ...item,
-  tanggal_mulai: item.tanggal_mulai
-    ? new Date(item.tanggal_mulai).toLocaleDateString()
+  periode_krs_mulai: item.periode_krs_mulai
+    ? new Date(item.periode_krs_mulai).toLocaleDateString()
     : "-",
-  tanggal_selesai: item.tanggal_selesai
-    ? new Date(item.tanggal_selesai).toLocaleDateString()
+  periode_krs_selesai: item.periode_krs_selesai
+    ? new Date(item.periode_krs_selesai).toLocaleDateString()
     : "-",
   status: item.is_aktif ? (
     <Badge variant="default">Aktif</Badge>

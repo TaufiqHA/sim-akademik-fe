@@ -29,12 +29,14 @@ import {
 
 export default function DokumenApprovalPage() {
   const { user } = useAuth()
-  const [documents, setDocuments] = useState([])
+  const [allDocuments, setAllDocuments] = useState([]) // Store all documents
+  const [documents, setDocuments] = useState([]) // Store filtered documents
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [loading, setLoading] = useState(true)
   const [rejectReason, setRejectReason] = useState('')
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [documentToReject, setDocumentToReject] = useState(null)
+  const [activeTab, setActiveTab] = useState('pending')
 
   useEffect(() => {
     if (user) {
@@ -42,25 +44,57 @@ export default function DokumenApprovalPage() {
     }
   }, [user])
 
+  // Client-side filter when tab changes
+  useEffect(() => {
+    filterDocuments(activeTab)
+  }, [activeTab, allDocuments])
+
+  const filterDocuments = (status) => {
+    if (!allDocuments.length) {
+      setDocuments([])
+      return
+    }
+
+    let filtered = [...allDocuments]
+
+    if (status === 'pending') {
+      filtered = filtered.filter(d => d.status === 'Pending')
+    } else if (status === 'approved') {
+      filtered = filtered.filter(d => d.status === 'Approved')
+    } else if (status === 'rejected') {
+      filtered = filtered.filter(d => d.status === 'Rejected')
+    }
+    // 'all' shows all documents, no filtering needed
+
+    setDocuments(filtered)
+  }
+
   const loadDocuments = async () => {
     try {
       setLoading(true)
-      const allDocuments = await getDokumenAkademik()
 
-      // Ensure allDocuments is an array, set empty array if null/undefined
-      const documentsArray = Array.isArray(allDocuments) ? allDocuments : []
+      // Load all documents without status filter for client-side filtering
+      const allDocsData = await getDokumenAkademik()
 
-      // Add uploaded_by_name field if not present
+      // Ensure allDocsData is an array, set empty array if null/undefined
+      const documentsArray = Array.isArray(allDocsData) ? allDocsData : []
+
+      // Map document data according to API schema
       const documentsWithNames = documentsArray.map(doc => ({
-        ...doc,
+        id: doc.id,
+        jenis_dokumen: doc.jenis_dokumen,
+        file_path: doc.file_path,
+        uploaded_by: doc.uploaded_by,
+        approved_by: doc.approved_by,
+        status: doc.status, // API returns: "Pending", "Approved", "Rejected"
         uploaded_by_name: doc.uploaded_by_name || `User ${doc.uploaded_by}`,
         created_at: doc.created_at || new Date().toISOString()
       }))
 
-      setDocuments(documentsWithNames)
+      setAllDocuments(documentsWithNames)
     } catch (error) {
       console.error('Error loading documents:', error)
-      setDocuments([])
+      setAllDocuments([])
     } finally {
       setLoading(false)
     }
@@ -69,14 +103,15 @@ export default function DokumenApprovalPage() {
   const handleApproveDocument = async (documentId) => {
     try {
       await approveDokumenAkademik(documentId)
-      
-      // Update local state
-      setDocuments(docs => docs.map(doc => 
-        doc.id === documentId 
-          ? { ...doc, status: 'Approved', approved_by: user.id }
-          : doc
-      ))
-      
+
+      // Update both all documents and current filtered documents
+      const updateDoc = (doc) => doc.id === documentId
+        ? { ...doc, status: 'Approved', approved_by: user.id }
+        : doc
+
+      setAllDocuments(docs => docs.map(updateDoc))
+      setDocuments(docs => docs.map(updateDoc))
+
       setSelectedDocument(null)
     } catch (error) {
       console.error('Error approving document:', error)
@@ -84,17 +119,19 @@ export default function DokumenApprovalPage() {
     }
   }
 
-  const handleRejectDocument = async (documentId, reason = '') => {
+  const handleRejectDocument = async (documentId, alasan = '') => {
     try {
-      await rejectDokumenAkademik(documentId, reason)
-      
-      // Update local state
-      setDocuments(docs => docs.map(doc => 
-        doc.id === documentId 
-          ? { ...doc, status: 'Rejected', approved_by: user.id }
-          : doc
-      ))
-      
+      // API expects 'alasan' parameter according to sim.json spec
+      await rejectDokumenAkademik(documentId, alasan)
+
+      // Update both all documents and current filtered documents
+      const updateDoc = (doc) => doc.id === documentId
+        ? { ...doc, status: 'Rejected', approved_by: user.id }
+        : doc
+
+      setAllDocuments(docs => docs.map(updateDoc))
+      setDocuments(docs => docs.map(updateDoc))
+
       setSelectedDocument(null)
       setShowRejectDialog(false)
       setRejectReason('')
@@ -127,6 +164,7 @@ export default function DokumenApprovalPage() {
   }
 
   const getStatusBadge = (status) => {
+    // Status values according to sim.json API spec: "Pending", "Approved", "Rejected"
     switch (status) {
       case 'Pending':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><IconClock className="w-3 h-3 mr-1" />Menunggu</Badge>
@@ -135,7 +173,7 @@ export default function DokumenApprovalPage() {
       case 'Rejected':
         return <Badge variant="destructive" className="bg-red-100 text-red-800"><IconCircleX className="w-3 h-3 mr-1" />Ditolak</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status || 'Unknown'}</Badge>
     }
   }
 
@@ -264,17 +302,11 @@ export default function DokumenApprovalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Persetujuan Dokumen</h1>
-          <p className="text-muted-foreground">
-            Kelola persetujuan dokumen akademik yang memerlukan tanda tangan Dekan
-          </p>
-        </div>
-        <Button>
-          <IconPlus className="w-4 h-4 mr-2" />
-          Upload Dokumen
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Persetujuan Dokumen</h1>
+        <p className="text-muted-foreground">
+          Kelola persetujuan dokumen akademik yang memerlukan tanda tangan Dekan
+        </p>
       </div>
 
       {/* Document Statistics */}
@@ -285,46 +317,46 @@ export default function DokumenApprovalPage() {
             <IconFile className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{documents.length}</div>
+            <div className="text-2xl font-bold">{allDocuments.length}</div>
             <p className="text-xs text-muted-foreground">
               Semua dokumen
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Menunggu Persetujuan</CardTitle>
             <IconClock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{documents.filter(d => d.status === 'Pending').length}</div>
+            <div className="text-2xl font-bold">{allDocuments.filter(d => d.status === 'Pending').length}</div>
             <p className="text-xs text-muted-foreground">
               Dokumen pending
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Disetujui</CardTitle>
             <IconCircleCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{documents.filter(d => d.status === 'Approved').length}</div>
+            <div className="text-2xl font-bold text-green-600">{allDocuments.filter(d => d.status === 'Approved').length}</div>
             <p className="text-xs text-muted-foreground">
               Dokumen disetujui
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Ditolak</CardTitle>
             <IconCircleX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{documents.filter(d => d.status === 'Rejected').length}</div>
+            <div className="text-2xl font-bold text-red-600">{allDocuments.filter(d => d.status === 'Rejected').length}</div>
             <p className="text-xs text-muted-foreground">
               Dokumen ditolak
             </p>
@@ -344,43 +376,43 @@ export default function DokumenApprovalPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="pending" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList>
               <TabsTrigger value="pending">
-                Menunggu Persetujuan ({documents.filter(d => d.status === 'Pending').length})
+                Menunggu Persetujuan ({allDocuments.filter(d => d.status === 'Pending').length})
               </TabsTrigger>
               <TabsTrigger value="approved">
-                Disetujui ({documents.filter(d => d.status === 'Approved').length})
+                Disetujui ({allDocuments.filter(d => d.status === 'Approved').length})
               </TabsTrigger>
               <TabsTrigger value="rejected">
-                Ditolak ({documents.filter(d => d.status === 'Rejected').length})
+                Ditolak ({allDocuments.filter(d => d.status === 'Rejected').length})
               </TabsTrigger>
               <TabsTrigger value="all">
-                Semua ({documents.length})
+                Semua ({allDocuments.length})
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="pending" className="space-y-4">
               <DataTable
                 columns={documentColumns}
-                data={documents.filter(d => d.status === 'Pending')}
+                data={documents}
               />
             </TabsContent>
-            
+
             <TabsContent value="approved" className="space-y-4">
               <DataTable
                 columns={documentColumns}
-                data={documents.filter(d => d.status === 'Approved')}
+                data={documents}
               />
             </TabsContent>
-            
+
             <TabsContent value="rejected" className="space-y-4">
               <DataTable
                 columns={documentColumns}
-                data={documents.filter(d => d.status === 'Rejected')}
+                data={documents}
               />
             </TabsContent>
-            
+
             <TabsContent value="all" className="space-y-4">
               <DataTable
                 columns={documentColumns}

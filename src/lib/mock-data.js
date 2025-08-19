@@ -31,6 +31,66 @@ export const mockData = {
       prodi_id: 1,
       created_at: "2024-01-03T00:00:00Z",
       updated_at: "2024-01-03T00:00:00Z"
+    },
+    {
+      id: 4,
+      nama: "Budi Dosen",
+      email: "dosen@simak.test",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 5,
+      created_at: "2024-01-04T00:00:00Z",
+      updated_at: "2024-01-04T00:00:00Z"
+    },
+    {
+      id: 5,
+      nama: "Mega Update",
+      email: "mega@mail.com",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 6,
+      created_at: "2024-01-05T00:00:00Z",
+      updated_at: "2024-01-05T00:00:00Z"
+    },
+    {
+      id: 6,
+      nama: "Dr. Ahmad Rizki",
+      email: "ahmad@teknik.edu",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 5,
+      created_at: "2024-01-06T00:00:00Z",
+      updated_at: "2024-01-06T00:00:00Z"
+    },
+    {
+      id: 7,
+      nama: "Dr. Siti Aminah",
+      email: "siti@teknik.edu",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 6,
+      created_at: "2024-01-07T00:00:00Z",
+      updated_at: "2024-01-07T00:00:00Z"
+    },
+    {
+      id: 8,
+      nama: "Prof. Andi Wijaya",
+      email: "andi@teknik.edu",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 5,
+      created_at: "2024-01-08T00:00:00Z",
+      updated_at: "2024-01-08T00:00:00Z"
+    },
+    {
+      id: 9,
+      nama: "Dr. Maya Sari",
+      email: "maya@teknik.edu",
+      role_id: 6,
+      fakultas_id: 3,
+      prodi_id: 6,
+      created_at: "2024-01-09T00:00:00Z",
+      updated_at: "2024-01-09T00:00:00Z"
     }
   ],
   
@@ -70,23 +130,32 @@ export const mockData = {
   tahunAkademik: [
     {
       id: 1,
-      nama_tahun: "2024/2025 Ganjil",
-      tanggal_mulai: "2024-08-01",
-      tanggal_selesai: "2025-01-31",
+      tahun: "2024/2025",
+      semester: "Ganjil",
+      periode_krs_mulai: "2024-08-01",
+      periode_krs_selesai: "2024-08-15",
+      periode_nilai_mulai: "2024-12-01",
+      periode_nilai_selesai: "2025-01-31",
       is_aktif: true
     },
     {
       id: 2,
-      nama_tahun: "2023/2024 Genap",
-      tanggal_mulai: "2024-02-01",
-      tanggal_selesai: "2024-07-31",
+      tahun: "2023/2024",
+      semester: "Genap",
+      periode_krs_mulai: "2024-02-01",
+      periode_krs_selesai: "2024-02-15",
+      periode_nilai_mulai: "2024-06-01",
+      periode_nilai_selesai: "2024-07-31",
       is_aktif: false
     },
     {
       id: 3,
-      nama_tahun: "2023/2024 Ganjil",
-      tanggal_mulai: "2023-08-01",
-      tanggal_selesai: "2024-01-31",
+      tahun: "2023/2024",
+      semester: "Ganjil",
+      periode_krs_mulai: "2023-08-01",
+      periode_krs_selesai: "2023-08-15",
+      periode_nilai_mulai: "2023-12-01",
+      periode_nilai_selesai: "2024-01-31",
       is_aktif: false
     }
   ],
@@ -138,24 +207,26 @@ export const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms
 
 export const filterData = (data, params = {}) => {
   let result = [...data]
-  
-  if (params.search) {
-    const searchLower = params.search.toLowerCase()
-    result = result.filter(item => 
-      Object.values(item).some(value => 
+
+  // Handle both 'search' and 'q' parameters for search functionality
+  const searchTerm = params.search || params.q;
+  if (searchTerm) {
+    const searchLower = searchTerm.toLowerCase()
+    result = result.filter(item =>
+      Object.values(item).some(value =>
         String(value).toLowerCase().includes(searchLower)
       )
     )
   }
-  
+
   if (params.role_id) {
     result = result.filter(item => item.role_id === parseInt(params.role_id))
   }
-  
+
   if (params.fakultas_id) {
     result = result.filter(item => item.fakultas_id === parseInt(params.fakultas_id))
   }
-  
+
   return result
 }
 
