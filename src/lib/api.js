@@ -1,8 +1,11 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://edlynk.aon-mitrasolutions.com/api";
 
 // Development mode flag - set to true to use mock data
-const USE_MOCK_DATA = process.env.NODE_ENV === 'development' && (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL === '');
+const USE_MOCK_DATA =
+  process.env.NODE_ENV === "development" &&
+  (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL === "");
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -65,8 +68,8 @@ async function fetchApi(endpoint, options = {}) {
       throw error;
     }
     // If network error in development, fall back to mock data
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Backend not available, using mock data:', error.message);
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Backend not available, using mock data:", error.message);
       return handleMockApi(endpoint, options);
     }
     throw new ApiError("Network error", 0, { message: error.message });
@@ -694,11 +697,9 @@ export async function downloadKhs(khsId) {
   });
 
   if (!response.ok) {
-    throw new ApiError(
-      `HTTP ${response.status}`,
-      response.status,
-      { message: "Failed to download KHS" }
-    );
+    throw new ApiError(`HTTP ${response.status}`, response.status, {
+      message: "Failed to download KHS",
+    });
   }
 
   return response.blob();
@@ -723,7 +724,7 @@ export async function uploadProposalSkripsi(formData) {
   const token = getStoredToken();
 
   // Add jenis_dokumen to formData
-  formData.append('jenis_dokumen', 'proposal');
+  formData.append("jenis_dokumen", "proposal");
 
   const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
     method: "POST",
@@ -754,7 +755,7 @@ export async function uploadSuratPermintaan(formData, jenisSurat) {
   const token = getStoredToken();
 
   // Add jenis_dokumen to formData based on jenisSurat
-  formData.append('jenis_dokumen', jenisSurat);
+  formData.append("jenis_dokumen", jenisSurat);
 
   const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
     method: "POST",
@@ -797,65 +798,65 @@ export async function getMahasiswaDokumen(mahasiswaId, params = {}) {
 
 // Mock API handler for development
 async function handleMockApi(endpoint, options = {}) {
-  const { mockData, dashboardData, delay } = await import('./mock-data');
+  const { mockData, dashboardData, delay } = await import("./mock-data");
 
   // Simulate API delay
   await delay(200);
 
-  const method = options.method || 'GET';
+  const method = options.method || "GET";
 
   // Handle dashboard endpoints
-  if (endpoint === '/dashboard/mahasiswa') {
+  if (endpoint === "/dashboard/mahasiswa") {
     return dashboardData.mahasiswa;
   }
 
-  if (endpoint === '/dashboard/dosen') {
+  if (endpoint === "/dashboard/dosen") {
     return dashboardData.dosen;
   }
 
-  if (endpoint.startsWith('/dashboard/fakultas/')) {
+  if (endpoint.startsWith("/dashboard/fakultas/")) {
     return dashboardData.dekan;
   }
 
-  if (endpoint.startsWith('/dashboard/prodi/')) {
+  if (endpoint.startsWith("/dashboard/prodi/")) {
     return dashboardData.kaprodi;
   }
 
-  if (endpoint === '/dashboard/super-admin') {
+  if (endpoint === "/dashboard/super-admin") {
     return mockData.superAdminStats;
   }
 
   // Handle auth endpoints
-  if (endpoint === '/auth/login') {
-    const { email, password } = JSON.parse(options.body || '{}');
+  if (endpoint === "/auth/login") {
+    const { email, password } = JSON.parse(options.body || "{}");
     if (email && password) {
       return {
-        access_token: 'mock_token_123',
-        token_type: 'Bearer',
+        access_token: "mock_token_123",
+        token_type: "Bearer",
         user: {
           id: 1,
-          nama: 'Test User',
+          nama: "Test User",
           email: email,
           role_id: 7, // Mahasiswa
           fakultas_id: 1,
-          prodi_id: 1
-        }
+          prodi_id: 1,
+        },
       };
     }
-    throw new ApiError('Invalid credentials', 401, {});
+    throw new ApiError("Invalid credentials", 401, {});
   }
 
-  if (endpoint === '/auth/me') {
+  if (endpoint === "/auth/me") {
     const storedUser = getStoredUser();
     if (storedUser) {
       return storedUser;
     }
-    throw new ApiError('Unauthorized', 401, {});
+    throw new ApiError("Unauthorized", 401, {});
   }
 
   // Handle KRS endpoints
-  if (endpoint.startsWith('/krs')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/krs")) {
+    if (method === "GET") {
       return [
         {
           id: 1,
@@ -866,87 +867,97 @@ async function handleMockApi(endpoint, options = {}) {
             {
               jadwal_kuliah: {
                 id: 1,
-                mata_kuliah: { id: 1, nama_mk: "Pemrograman Web", kode_mk: "TI301", sks: 3 },
+                mata_kuliah: {
+                  id: 1,
+                  nama_mk: "Pemrograman Web",
+                  kode_mk: "TI301",
+                  sks: 3,
+                },
                 dosen: { id: 1, nama: "Dr. Ahmad Rizki" },
                 hari: "Senin",
                 jam_mulai: "08:00",
                 jam_selesai: "10:30",
-                ruang: "Lab Komputer 1"
-              }
+                ruang: "Lab Komputer 1",
+              },
             },
             {
               jadwal_kuliah: {
                 id: 2,
-                mata_kuliah: { id: 2, nama_mk: "Basis Data", kode_mk: "TI302", sks: 3 },
+                mata_kuliah: {
+                  id: 2,
+                  nama_mk: "Basis Data",
+                  kode_mk: "TI302",
+                  sks: 3,
+                },
                 dosen: { id: 2, nama: "Dr. Siti Aminah" },
                 hari: "Rabu",
                 jam_mulai: "10:30",
                 jam_selesai: "13:00",
-                ruang: "Lab Komputer 2"
-              }
-            }
-          ]
-        }
+                ruang: "Lab Komputer 2",
+              },
+            },
+          ],
+        },
       ];
     }
   }
 
   // Handle materi kuliah endpoints
-  if (endpoint.startsWith('/materi-kuliah')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/materi-kuliah")) {
+    if (method === "GET") {
       return [
         {
           id: 1,
           judul: "Pengenalan HTML dan CSS",
           deskripsi: "Materi dasar HTML dan CSS untuk pemrograman web",
           file_path: "/uploads/materi/html-css-intro.pdf",
-          created_at: "2024-01-15T10:00:00Z"
+          created_at: "2024-01-15T10:00:00Z",
         },
         {
           id: 2,
           judul: "JavaScript Fundamentals",
           deskripsi: "Konsep dasar JavaScript dan DOM manipulation",
           file_path: "/uploads/materi/js-fundamentals.pdf",
-          created_at: "2024-01-20T14:30:00Z"
+          created_at: "2024-01-20T14:30:00Z",
         },
         {
           id: 3,
           judul: "Framework CSS Bootstrap",
           deskripsi: "Menggunakan Bootstrap untuk responsive design",
           file_path: "/uploads/materi/bootstrap-tutorial.pdf",
-          created_at: "2024-01-25T09:15:00Z"
-        }
+          created_at: "2024-01-25T09:15:00Z",
+        },
       ];
     }
   }
 
   // Handle other endpoints with mock data
-  if (endpoint.startsWith('/users')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/users")) {
+    if (method === "GET") {
       return mockData.users;
     }
   }
 
-  if (endpoint.startsWith('/roles')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/roles")) {
+    if (method === "GET") {
       return mockData.roles;
     }
   }
 
-  if (endpoint.startsWith('/fakultas')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/fakultas")) {
+    if (method === "GET") {
       return mockData.fakultas;
     }
   }
 
-  if (endpoint.startsWith('/prodi')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/prodi")) {
+    if (method === "GET") {
       return { data: mockData.prodi };
     }
   }
 
-  if (endpoint.startsWith('/tahun-akademik')) {
-    if (method === 'GET') {
+  if (endpoint.startsWith("/tahun-akademik")) {
+    if (method === "GET") {
       return { data: mockData.tahunAkademik };
     }
   }
