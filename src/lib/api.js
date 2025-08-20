@@ -442,31 +442,50 @@ export async function rejectDokumenAkademik(id, alasan = "") {
 }
 
 export async function uploadDokumenAkademik(formData) {
-  const token = getStoredToken();
-
-  const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
-    method: "POST",
-    headers: {
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    let errorData;
-    try {
-      errorData = await response.json();
-    } catch {
-      errorData = { message: response.statusText };
-    }
-    throw new ApiError(
-      errorData.message || `HTTP ${response.status}`,
-      response.status,
-      errorData
-    );
+  // Return mock data in development when backend is not configured
+  if (USE_MOCK_DATA) {
+    return handleMockApi("/dokumen-akademik", { method: "POST", body: formData });
   }
 
-  return await response.json();
+  const token = getStoredToken();
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
+      method: "POST",
+      headers: {
+        // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
+        ...(token && { Authorization: `Bearer ${token}` }),
+        // Remove Content-Type header to let browser handle multipart/form-data
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: response.statusText };
+      }
+      throw new ApiError(
+        errorData.message || `HTTP ${response.status}`,
+        response.status,
+        errorData
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    // If network error in development, fall back to mock data
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Backend not available for file upload, using mock response:", error.message);
+      return handleMockApi("/dokumen-akademik", { method: "POST", body: formData });
+    }
+    throw new ApiError("Network error", 0, { message: error.message });
+  }
 }
 
 export async function deleteDokumenAkademik(id) {
@@ -603,6 +622,7 @@ export async function uploadMateriKuliah(formData) {
   const response = await fetch(`${API_BASE_URL}/materi-kuliah`, {
     method: "POST",
     headers: {
+      // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     body: formData,
@@ -781,6 +801,7 @@ export async function uploadProposalSkripsi(formData) {
   const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
     method: "POST",
     headers: {
+      // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     body: formData,
@@ -812,6 +833,7 @@ export async function uploadSuratPermintaan(formData, jenisSurat) {
   const response = await fetch(`${API_BASE_URL}/dokumen-akademik`, {
     method: "POST",
     headers: {
+      // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
       ...(token && { Authorization: `Bearer ${token}` }),
     },
     body: formData,
@@ -980,6 +1002,77 @@ async function handleMockApi(endpoint, options = {}) {
           created_at: "2024-01-25T09:15:00Z",
         },
       ];
+    }
+  }
+
+  // Handle document akademik endpoints
+  if (endpoint.startsWith("/dokumen-akademik")) {
+    if (method === "GET") {
+      // Parse query parameters for filtering
+      const url = new URL(endpoint, "http://localhost");
+      const params = Object.fromEntries(url.searchParams.entries());
+
+      // Mock documents data
+      const mockDocuments = [
+        {
+          id: 1,
+          jenis_dokumen: "fakultas",
+          file_path: "/uploads/dokumen/panduan-akademik-2024.pdf",
+          uploaded_by: 1,
+          uploaded_by_name: "Dr. Admin Fakultas",
+          approved_by: null,
+          approved_by_name: null,
+          status: "Pending",
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-15T10:00:00Z"
+        },
+        {
+          id: 2,
+          jenis_dokumen: "akademik",
+          file_path: "/uploads/dokumen/kalender-akademik-2024.pdf",
+          uploaded_by: 2,
+          uploaded_by_name: "Dr. Dekan",
+          approved_by: 1,
+          approved_by_name: "Dr. Admin Fakultas",
+          status: "Approved",
+          created_at: "2024-01-10T14:30:00Z",
+          updated_at: "2024-01-12T09:15:00Z"
+        }
+      ];
+
+      // Filter by jenis_dokumen if specified
+      let filteredDocs = mockDocuments;
+      if (params.jenis_dokumen) {
+        filteredDocs = mockDocuments.filter(doc => doc.jenis_dokumen === params.jenis_dokumen);
+      }
+
+      return filteredDocs;
+    }
+
+    if (method === "POST") {
+      // Mock successful upload response
+      const newDoc = {
+        id: Math.floor(Math.random() * 1000) + 100,
+        jenis_dokumen: "fakultas", // Default from FormData
+        file_path: "/uploads/dokumen/mock-uploaded-file.pdf",
+        uploaded_by: 1,
+        uploaded_by_name: "Current User",
+        approved_by: null,
+        approved_by_name: null,
+        status: "Pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      return newDoc;
+    }
+
+    if (method === "DELETE") {
+      const match = endpoint.match(/\/dokumen-akademik\/(\d+)/);
+      if (match) {
+        // Mock successful deletion
+        return { message: "Document deleted successfully" };
+      }
     }
   }
 

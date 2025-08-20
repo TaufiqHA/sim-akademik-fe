@@ -47,7 +47,6 @@ export default function DokumenFakultasPage() {
   const [statusFilter, setStatusFilter] = useState("all")
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
   const [uploadFormData, setUploadFormData] = useState({
-    judul: "",
     jenis_dokumen: "fakultas",
     file: null
   })
@@ -78,7 +77,7 @@ export default function DokumenFakultasPage() {
 
   const handleFileUpload = async () => {
     try {
-      if (!uploadFormData.file || !uploadFormData.judul) {
+      if (!uploadFormData.file || !uploadFormData.jenis_dokumen) {
         toast.error("Harap lengkapi semua field")
         return
       }
@@ -86,7 +85,6 @@ export default function DokumenFakultasPage() {
       const formData = new FormData()
       formData.append("file", uploadFormData.file)
       formData.append("jenis_dokumen", uploadFormData.jenis_dokumen)
-      formData.append("judul", uploadFormData.judul)
 
       await uploadDokumenAkademik(formData)
 
@@ -94,7 +92,6 @@ export default function DokumenFakultasPage() {
       await fetchDocuments()
 
       setUploadFormData({
-        judul: "",
         jenis_dokumen: "fakultas",
         file: null
       })
@@ -211,28 +208,16 @@ export default function DokumenFakultasPage() {
                 Upload dokumen akademik fakultas baru
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="judul" className="text-right">
-                  Judul
+            <div className="space-y-4 py-4">
+              <div className="form-field">
+                <Label htmlFor="jenis" className="block text-sm font-medium mb-2">
+                  Jenis Dokumen
                 </Label>
-                <Input
-                  id="judul"
-                  value={uploadFormData.judul}
-                  onChange={(e) => setUploadFormData({ ...uploadFormData, judul: e.target.value })}
-                  className="col-span-3"
-                  placeholder="Masukkan judul dokumen"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="jenis" className="text-right">
-                  Jenis
-                </Label>
-                <Select 
-                  value={uploadFormData.jenis_dokumen} 
+                <Select
+                  value={uploadFormData.jenis_dokumen}
                   onValueChange={(value) => setUploadFormData({ ...uploadFormData, jenis_dokumen: value })}
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih jenis dokumen" />
                   </SelectTrigger>
                   <SelectContent>
@@ -243,20 +228,20 @@ export default function DokumenFakultasPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="file" className="text-right">
+              <div className="form-field">
+                <Label htmlFor="file" className="block text-sm font-medium mb-2">
                   File
                 </Label>
                 <Input
                   id="file"
                   type="file"
                   onChange={handleFileChange}
-                  className="col-span-3"
+                  className="w-full"
                   accept=".pdf,.doc,.docx"
                 />
-              </div>
-              <div className="col-span-4 text-sm text-muted-foreground">
-                <p>* File yang diperbolehkan: PDF, DOC, DOCX (Maksimal 10MB)</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  * File yang diperbolehkan: PDF, DOC, DOCX (Maksimal 10MB)
+                </p>
               </div>
             </div>
             <DialogFooter>

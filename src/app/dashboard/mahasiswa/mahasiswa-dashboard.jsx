@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { getDashboardMahasiswa } from "@/lib/api";
+import { testApiConnection, getApiConfig } from "@/lib/api-test";
 import {
   Card,
   CardContent,
@@ -37,27 +38,50 @@ export default function MahasiswaDashboard() {
     tugas_pending: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [apiConfig, setApiConfig] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
+    setApiConfig(getApiConfig());
   }, []);
+
+  const handleTestApi = async () => {
+    console.log('Manual API test triggered');
+    const result = await testApiConnection();
+    if (result.success) {
+      alert('✅ API Connection Successful!\nCheck console for details.');
+    } else {
+      alert('❌ API Connection Failed!\nCheck console for error details.');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      console.log("Loading dashboard data from API...");
       const data = await getDashboardMahasiswa();
+      console.log("Dashboard data received:", data);
       setStats(data);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
-      // Use mock data if API fails
-      setStats({
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
+
+      // Use fallback data if API fails
+      const fallbackData = {
         current_semester: "2024/2025 Ganjil",
         total_sks: 120,
         ipk: 3.45,
         status_krs: "Approved",
         mata_kuliah_semester: 6,
         tugas_pending: 3,
-      });
+      };
+
+      console.log("Using fallback data:", fallbackData);
+      setStats(fallbackData);
     } finally {
       setLoading(false);
     }
@@ -92,6 +116,36 @@ export default function MahasiswaDashboard() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard Akademik</h1>
       </div>
+
+      {/* API Configuration Info */}
+      {apiConfig && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-sm">API Configuration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <p className="font-medium text-muted-foreground">API URL:</p>
+                <p className="font-mono">{apiConfig.apiUrl || 'Not configured'}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Environment:</p>
+                <p>{apiConfig.environment}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Using Mock Data:</p>
+                <p>{apiConfig.useMockData ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Button variant="outline" size="sm" onClick={handleTestApi}>
+                Test API Connection
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
