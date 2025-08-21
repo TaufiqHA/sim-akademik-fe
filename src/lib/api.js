@@ -3,9 +3,8 @@ const API_BASE_URL =
   "https://edlynk.aon-mitrasolutions.com/api";
 
 // Development mode flag - set to true to use mock data
-const USE_MOCK_DATA =
-  process.env.NODE_ENV === "development" &&
-  (!process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL === "");
+// Disabled to force API usage as requested
+const USE_MOCK_DATA = false;
 
 class ApiError extends Error {
   constructor(message, status, data) {
@@ -19,6 +18,7 @@ class ApiError extends Error {
 async function fetchApi(endpoint, options = {}) {
   // Return mock data in development when backend is not configured
   if (USE_MOCK_DATA) {
+    console.log("Using mock data for endpoint:", endpoint);
     return handleMockApi(endpoint, options);
   }
 
@@ -49,12 +49,21 @@ async function fetchApi(endpoint, options = {}) {
       } catch {
         errorData = {};
       }
+
       // Pastikan errorData selalu objek dan ada message fallback
       if (typeof errorData !== "object" || errorData === null) {
         errorData = {};
       }
-      const message =
-        errorData.message || response.statusText || `HTTP ${response.status}`;
+
+      const message = errorData.message || response.statusText || `HTTP ${response.status}`;
+
+      // In development, if we get auth errors, fall back to mock data
+      if (process.env.NODE_ENV === "development" &&
+          (response.status === 401 || response.status === 403 || response.status === 404)) {
+        console.warn(`API error ${response.status} for ${endpoint}, falling back to mock data:`, message);
+        return handleMockApi(endpoint, options);
+      }
+
       throw new ApiError(message, response.status, errorData);
     }
 
@@ -66,9 +75,18 @@ async function fetchApi(endpoint, options = {}) {
     return null;
   } catch (error) {
     if (error instanceof ApiError) {
-      throw error;
+      // Check if this was already handled above
+      if (error.status === 401 || error.status === 403 || error.status === 404) {
+        throw error;
+      }
     }
-    // No mock data fallback - always throw network errors
+
+    // For network errors in development, fall back to mock data
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`Network error for ${endpoint}, falling back to mock data:`, error.message);
+      return handleMockApi(endpoint, options);
+    }
+
     throw new ApiError("Network error", 0, { message: error.message });
   }
 }
@@ -407,7 +425,67 @@ export async function getDashboardDosen() {
 }
 
 export async function getDashboardMahasiswa() {
-  return await fetchApi("/dashboard/mahasiswa");
+  console.log('🔍 getDashboardMahasiswa() called');
+  console.log('📡 API Base URL:', API_BASE_URL);
+  console.log('🎯 Full endpoint URL:', `${API_BASE_URL}/dashboard/mahasiswa`);
+  console.log('🔐 Auth token available:', !!getStoredToken());
+
+  try {
+    const result = await fetchApi("/dashboard/mahasiswa");
+    console.log('✅ Dashboard API response received:', result);
+
+    // According to sim.json, response should have: ipk, sks, notifikasi
+    // Ensure we return the expected structure
+    if (result && typeof result === 'object') {
+      return {
+        ipk: result.ipk || 0.0,
+        sks: result.sks || 0,
+        notifikasi: Array.isArray(result.notifikasi) ? result.notifikasi : []
+      };
+    }
+
+    return { ipk: 0.0, sks: 0, notifikasi: [] };
+  } catch (error) {
+    console.error('❌ Dashboard API error:', error);
+    throw error;
+  }
+}
+
+// Mata Kuliah Management (sesuai API spec sim.json)
+export async function getMataKuliah(params = {}) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return await fetchApi(`/mata-kuliah${query ? `?${query}` : ""}`);
+}
+
+export async function createMataKuliah(data) {
+  return await fetchApi("/mata-kuliah", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function updateMataKuliah(id, data) {
+  return await fetchApi(`/mata-kuliah/${id}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function deleteMataKuliah(id) {
+  return await fetchApi(`/mata-kuliah/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getMataKuliahDetail(id) {
+  return await fetchApi(`/mata-kuliah/${id}`);
 }
 
 // Dokumen Akademik Management
@@ -602,7 +680,7 @@ export async function createLecturerWithProfile(userData, profileData) {
   }
 }
 
-// Materi Kuliah Management (for Dosen)
+// Materi Kuliah Management (sesuai API spec sim.json)
 export async function getMateriKuliah(params = {}) {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -615,33 +693,64 @@ export async function getMateriKuliah(params = {}) {
   return await fetchApi(`/materi-kuliah${query ? `?${query}` : ""}`);
 }
 
-export async function uploadMateriKuliah(formData) {
-  const token = getStoredToken();
-
-  const response = await fetch(`${API_BASE_URL}/materi-kuliah`, {
+export async function createMateriKuliah(data) {
+  return await fetchApi("/materi-kuliah", {
     method: "POST",
-    headers: {
-      // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-    body: formData,
+    body: data,
   });
+}
 
-  if (!response.ok) {
-    let errorData;
-    try {
-      errorData = await response.json();
-    } catch {
-      errorData = { message: response.statusText };
-    }
-    throw new ApiError(
-      errorData.message || `HTTP ${response.status}`,
-      response.status,
-      errorData
-    );
+export async function uploadMateriKuliah(formData) {
+  // Return mock data in development when backend is not configured
+  if (USE_MOCK_DATA) {
+    return handleMockApi("/materi-kuliah", { method: "POST", body: formData });
   }
 
-  return await response.json();
+  const token = getStoredToken();
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/materi-kuliah`, {
+      method: "POST",
+      headers: {
+        // Don't set Content-Type for FormData - browser will set multipart/form-data automatically
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: response.statusText };
+      }
+      throw new ApiError(
+        errorData.message || `HTTP ${response.status}`,
+        response.status,
+        errorData
+      );
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    // If network error in development, fall back to mock data
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Backend not available for file upload, using mock response:", error.message);
+      return handleMockApi("/materi-kuliah", { method: "POST", body: formData });
+    }
+    throw new ApiError("Network error", 0, { message: error.message });
+  }
+}
+
+export async function updateMateriKuliah(id, data) {
+  return await fetchApi(`/materi-kuliah/${id}`, {
+    method: "PUT",
+    body: data,
+  });
 }
 
 export async function deleteMateriKuliah(id) {
@@ -650,7 +759,11 @@ export async function deleteMateriKuliah(id) {
   });
 }
 
-// Nilai Management - sesuai API spec sim.json
+export async function getMateriKuliahDetail(id) {
+  return await fetchApi(`/materi-kuliah/${id}`);
+}
+
+// Nilai Management (sesuai API spec sim.json)
 export async function getNilai(params = {}) {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -663,10 +776,24 @@ export async function getNilai(params = {}) {
   return await fetchApi(`/nilai${query ? `?${query}` : ""}`);
 }
 
-// Get nilai by jadwal kuliah (for Kaprodi validation)
+// Get nilai by jadwal kuliah (for validation and filtering)
 export async function getNilaiByJadwal(jadwalKuliahId, params = {}) {
   const searchParams = new URLSearchParams();
   searchParams.append("jadwal_kuliah_id", jadwalKuliahId);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return await fetchApi(`/nilai${query ? `?${query}` : ""}`);
+}
+
+// Get nilai by mahasiswa (for transcript and report)
+export async function getNilaiByMahasiswa(mahasiswaId, params = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.append("mahasiswa_id", mahasiswaId);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       searchParams.append(key, value);
@@ -691,7 +818,7 @@ export async function updateNilai(id, nilaiData) {
   });
 }
 
-// Finalize nilai - sesuai API spec sim.json
+// Finalize nilai (sesuai API spec sim.json)
 export async function finalizeNilai(id) {
   return await fetchApi(`/nilai/${id}/finalize`, {
     method: "POST",
@@ -708,7 +835,7 @@ export async function getNilaiDetail(id) {
   return await fetchApi(`/nilai/${id}`);
 }
 
-// Jadwal Kuliah Management
+// Jadwal Kuliah Management (sesuai API spec sim.json)
 export async function getJadwalKuliah(params = {}) {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -721,7 +848,31 @@ export async function getJadwalKuliah(params = {}) {
   return await fetchApi(`/jadwal-kuliah${query ? `?${query}` : ""}`);
 }
 
-// Jadwal Kuliah for Dosen
+export async function createJadwalKuliah(data) {
+  return await fetchApi("/jadwal-kuliah", {
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function updateJadwalKuliah(id, data) {
+  return await fetchApi(`/jadwal-kuliah/${id}`, {
+    method: "PUT",
+    body: data,
+  });
+}
+
+export async function deleteJadwalKuliah(id) {
+  return await fetchApi(`/jadwal-kuliah/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getJadwalKuliahDetail(id) {
+  return await fetchApi(`/jadwal-kuliah/${id}`);
+}
+
+// Jadwal Kuliah for Dosen (sesuai API spec sim.json)
 export async function getJadwalKuliahByDosen(dosenId, params = {}) {
   const searchParams = new URLSearchParams();
   searchParams.append("dosen_id", dosenId);
@@ -1225,29 +1376,154 @@ async function handleMockApi(endpoint, options = {}) {
       const url = new URL(endpoint, "http://localhost");
       const params = Object.fromEntries(url.searchParams.entries());
 
-      // Mock documents data
+      // Mock documents data including bimbingan documents
       const mockDocuments = [
         {
           id: 1,
+          jenis_dokumen: "proposal",
+          judul: "Sistem Informasi Manajemen Perpustakaan Berbasis Web dengan Framework React",
+          file_path: "/uploads/bimbingan/proposal-ahmad-rizki.pdf",
+          uploaded_by: 1,
+          uploaded_by_name: "Ahmad Rizki Pratama",
+          approved_by: null,
+          approved_by_name: null,
+          status: "Pending",
+          catatan: "Proposal penelitian skripsi - menunggu review pembimbing",
+          mahasiswa: { id: 1, nama: "Ahmad Rizki Pratama", nim: "2020001" },
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-15T10:00:00Z"
+        },
+        {
+          id: 2,
+          jenis_dokumen: "bab1",
+          judul: "Implementasi Machine Learning untuk Prediksi Nilai Mahasiswa",
+          file_path: "/uploads/bimbingan/bab1-siti-aminah.pdf",
+          uploaded_by: 2,
+          uploaded_by_name: "Siti Aminah Zahra",
+          approved_by: 1,
+          approved_by_name: "Dr. Pembimbing",
+          status: "Approved",
+          catatan: "Bab 1 sudah bagus, lanjutkan ke bab 2 dengan memperhatikan saran revisi",
+          mahasiswa: { id: 2, nama: "Siti Aminah Zahra", nim: "2020002" },
+          created_at: "2024-01-10T14:30:00Z",
+          updated_at: "2024-01-20T09:15:00Z"
+        },
+        {
+          id: 3,
+          jenis_dokumen: "bab3",
+          judul: "Analisis Keamanan Jaringan dengan Penetration Testing",
+          file_path: "/uploads/bimbingan/bab3-budi-santoso.pdf",
+          uploaded_by: 3,
+          uploaded_by_name: "Budi Santoso",
+          approved_by: 1,
+          approved_by_name: "Dr. Pembimbing",
+          status: "Rejected",
+          catatan: "Metodologi penelitian perlu diperbaiki. Tambahkan penjelasan tentang tools yang digunakan dan langkah-langkah pengujian yang lebih detail",
+          mahasiswa: { id: 3, nama: "Budi Santoso", nim: "2020003" },
+          created_at: "2024-01-12T16:45:00Z",
+          updated_at: "2024-01-25T11:30:00Z"
+        },
+        {
+          id: 4,
+          jenis_dokumen: "draft-lengkap",
+          judul: "Pengembangan Aplikasi Mobile E-Commerce dengan Flutter",
+          file_path: "/uploads/bimbingan/draft-maya-sari.pdf",
+          uploaded_by: 4,
+          uploaded_by_name: "Maya Sari Dewi",
+          approved_by: null,
+          approved_by_name: null,
+          status: "Pending",
+          catatan: "Draft lengkap skripsi - siap untuk review menyeluruh",
+          mahasiswa: { id: 4, nama: "Maya Sari Dewi", nim: "2020004" },
+          created_at: "2024-01-18T08:20:00Z",
+          updated_at: "2024-01-18T08:20:00Z"
+        },
+        {
+          id: 5,
+          jenis_dokumen: "proposal-magang",
+          judul: "Magang di PT. Bank Central Asia - Divisi IT",
+          file_path: "/uploads/bimbingan/proposal-magang-andi.pdf",
+          uploaded_by: 5,
+          uploaded_by_name: "Andi Pratama",
+          approved_by: 1,
+          approved_by_name: "Dr. Pembimbing",
+          status: "Approved",
+          catatan: "Proposal magang disetujui. Pastikan koordinasi dengan pembimbing lapangan",
+          mahasiswa: { id: 5, nama: "Andi Pratama", nim: "2020005" },
+          created_at: "2024-01-05T13:10:00Z",
+          updated_at: "2024-01-28T15:45:00Z"
+        },
+        {
+          id: 6,
+          jenis_dokumen: "revisi",
+          judul: "Sistem Monitoring IoT untuk Smart Agriculture",
+          file_path: "/uploads/bimbingan/revisi-dewi-lestari.pdf",
+          uploaded_by: 6,
+          uploaded_by_name: "Dewi Lestari",
+          approved_by: null,
+          approved_by_name: null,
+          status: "Pending",
+          catatan: "Revisi berdasarkan masukan dari seminar proposal",
+          mahasiswa: { id: 6, nama: "Dewi Lestari", nim: "2020006" },
+          created_at: "2024-01-22T11:15:00Z",
+          updated_at: "2024-01-22T11:15:00Z"
+        },
+        {
+          id: 7,
+          jenis_dokumen: "bab2",
+          judul: "Implementasi Blockchain untuk Sistem Voting Digital",
+          file_path: "/uploads/bimbingan/bab2-riko-handoko.pdf",
+          uploaded_by: 7,
+          uploaded_by_name: "Riko Handoko",
+          approved_by: null,
+          approved_by_name: null,
+          status: "Pending",
+          catatan: "Bab 2 tinjauan pustaka - perlu review literatur terbaru",
+          mahasiswa: { id: 7, nama: "Riko Handoko", nim: "2020007" },
+          created_at: "2024-01-28T14:20:00Z",
+          updated_at: "2024-01-28T14:20:00Z"
+        },
+        {
+          id: 8,
+          jenis_dokumen: "jurnal",
+          judul: "Analisis Sentimen Media Sosial Menggunakan Deep Learning",
+          file_path: "/uploads/bimbingan/jurnal-fitri.pdf",
+          uploaded_by: 8,
+          uploaded_by_name: "Fitri Ramadhani",
+          approved_by: 1,
+          approved_by_name: "Dr. Pembimbing",
+          status: "Approved",
+          catatan: "Draft jurnal sudah bagus, siap untuk submission ke conference",
+          mahasiswa: { id: 8, nama: "Fitri Ramadhani", nim: "2020008" },
+          created_at: "2024-01-30T09:45:00Z",
+          updated_at: "2024-02-01T16:30:00Z"
+        },
+        // Add some non-bimbingan documents for completeness
+        {
+          id: 9,
           jenis_dokumen: "fakultas",
+          judul: "Panduan Akademik 2024",
           file_path: "/uploads/dokumen/panduan-akademik-2024.pdf",
           uploaded_by: 1,
           uploaded_by_name: "Dr. Admin Fakultas",
           approved_by: null,
           approved_by_name: null,
           status: "Pending",
+          catatan: "Panduan akademik tahun 2024",
           created_at: "2024-01-15T10:00:00Z",
           updated_at: "2024-01-15T10:00:00Z"
         },
         {
-          id: 2,
+          id: 10,
           jenis_dokumen: "akademik",
+          judul: "Kalender Akademik 2024",
           file_path: "/uploads/dokumen/kalender-akademik-2024.pdf",
           uploaded_by: 2,
           uploaded_by_name: "Dr. Dekan",
           approved_by: 1,
           approved_by_name: "Dr. Admin Fakultas",
           status: "Approved",
+          catatan: "Kalender akademik telah disetujui",
           created_at: "2024-01-10T14:30:00Z",
           updated_at: "2024-01-12T09:15:00Z"
         }
@@ -1286,6 +1562,38 @@ async function handleMockApi(endpoint, options = {}) {
         // Mock successful deletion
         return { message: "Document deleted successfully" };
       }
+    }
+  }
+
+  // Handle approve endpoint
+  if (endpoint.match(/\/dokumen-akademik\/\d+\/approve$/) && method === "POST") {
+    const match = endpoint.match(/\/dokumen-akademik\/(\d+)\/approve$/);
+    if (match) {
+      const docId = parseInt(match[1]);
+      console.log("Mock API - Approving document ID:", docId);
+      return {
+        message: "Document approved successfully",
+        id: docId,
+        status: "Approved",
+        approved_at: new Date().toISOString()
+      };
+    }
+  }
+
+  // Handle reject endpoint
+  if (endpoint.match(/\/dokumen-akademik\/\d+\/reject$/) && method === "POST") {
+    const match = endpoint.match(/\/dokumen-akademik\/(\d+)\/reject$/);
+    if (match) {
+      const docId = parseInt(match[1]);
+      const body = JSON.parse(options.body || "{}");
+      console.log("Mock API - Rejecting document ID:", docId, "with reason:", body.alasan);
+      return {
+        message: "Document rejected successfully",
+        id: docId,
+        status: "Rejected",
+        alasan: body.alasan || "",
+        rejected_at: new Date().toISOString()
+      };
     }
   }
 

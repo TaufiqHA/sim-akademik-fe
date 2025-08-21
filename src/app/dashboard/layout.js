@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { ProtectedRoute } from "@/components/protected-route"
 import { SiteHeader } from "@/components/site-header"
 import { GlobalErrorHandler } from "@/components/error-boundary"
+import { Toaster } from "@/components/ui/sonner"
 import {
   SidebarInset,
   SidebarProvider,
@@ -34,6 +35,7 @@ export default function DashboardLayout({ children }) {
             </div>
           </SidebarInset>
         </SidebarProvider>
+        <Toaster />
       </GlobalErrorHandler>
     </ProtectedRoute>
   );

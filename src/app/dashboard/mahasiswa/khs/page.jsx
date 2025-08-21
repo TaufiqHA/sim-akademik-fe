@@ -33,6 +33,7 @@ export default function KhsPage() {
   const { user } = useAuth();
   const [khsList, setKhsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState(null);
 
   useEffect(() => {
@@ -44,56 +45,13 @@ export default function KhsPage() {
   const loadKhsData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await getKhsMahasiswa(user.id);
       setKhsList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading KHS data:", error);
-      // Mock data for demo
-      setKhsList([
-        {
-          id: 1,
-          tahun_akademik: { id: 1, tahun: "2024/2025", semester: "Ganjil" },
-          ip_semester: 3.45,
-          sks_semester: 18,
-          sks_kumulatif: 120,
-          ipk: 3.52,
-          created_at: "2024-01-31T23:59:59Z",
-          details: [
-            {
-              id: 1,
-              mata_kuliah: { nama_mk: "Pemrograman Web", kode_mk: "TI301", sks: 3 },
-              nilai_huruf: "A-",
-              nilai_angka: 3.7
-            },
-            {
-              id: 2,
-              mata_kuliah: { nama_mk: "Basis Data", kode_mk: "TI302", sks: 3 },
-              nilai_huruf: "B+",
-              nilai_angka: 3.3
-            }
-          ]
-        },
-        {
-          id: 2,
-          tahun_akademik: { id: 2, tahun: "2023/2024", semester: "Genap" },
-          ip_semester: 3.60,
-          sks_semester: 21,
-          sks_kumulatif: 102,
-          ipk: 3.55,
-          created_at: "2024-07-31T23:59:59Z",
-          details: []
-        },
-        {
-          id: 3,
-          tahun_akademik: { id: 3, tahun: "2023/2024", semester: "Ganjil" },
-          ip_semester: 3.55,
-          sks_semester: 20,
-          sks_kumulatif: 81,
-          ipk: 3.50,
-          created_at: "2024-01-31T23:59:59Z",
-          details: []
-        }
-      ]);
+      setError(`Gagal memuat data KHS: ${error.message}`);
+      setKhsList([]);
     } finally {
       setLoading(false);
     }
@@ -174,6 +132,11 @@ export default function KhsPage() {
         <p className="text-muted-foreground">
           Lihat dan unduh transkrip nilai per semester
         </p>
+        {error && (
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
       </div>
 
       {/* Statistics Cards */}

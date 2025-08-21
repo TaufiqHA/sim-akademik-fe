@@ -90,29 +90,7 @@ export default function MateriKuliahPage() {
       setMataKuliahList(mataKuliah);
     } catch (error) {
       console.error("Error loading mata kuliah data:", error);
-      // Mock data for demo
-      setMataKuliahList([
-        {
-          jadwal_id: 1,
-          mata_kuliah: { id: 1, nama_mk: "Pemrograman Web", kode_mk: "TI301", sks: 3 },
-          dosen: { id: 1, nama: "Dr. Ahmad Rizki" },
-          hari: "Senin",
-          jam_mulai: "08:00",
-          jam_selesai: "10:30",
-          ruang: "Lab Komputer 1",
-          tahun_akademik: { tahun: "2024/2025", semester: "Ganjil" }
-        },
-        {
-          jadwal_id: 2,
-          mata_kuliah: { id: 2, nama_mk: "Basis Data", kode_mk: "TI302", sks: 3 },
-          dosen: { id: 2, nama: "Dr. Siti Aminah" },
-          hari: "Rabu",
-          jam_mulai: "10:30",
-          jam_selesai: "13:00",
-          ruang: "Lab Komputer 2",
-          tahun_akademik: { tahun: "2024/2025", semester: "Ganjil" }
-        }
-      ]);
+      setMataKuliahList([]);
     } finally {
       setLoading(false);
     }
@@ -125,30 +103,7 @@ export default function MateriKuliahPage() {
       setMateriList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading materi data:", error);
-      // Mock data for demo
-      setMateriList([
-        {
-          id: 1,
-          judul: "Pengenalan HTML dan CSS",
-          deskripsi: "Materi dasar HTML dan CSS untuk pemrograman web",
-          file_path: "/uploads/materi/html-css-intro.pdf",
-          created_at: "2024-01-15T10:00:00Z"
-        },
-        {
-          id: 2,
-          judul: "JavaScript Fundamentals",
-          deskripsi: "Konsep dasar JavaScript dan DOM manipulation",
-          file_path: "/uploads/materi/js-fundamentals.pdf",
-          created_at: "2024-01-20T14:30:00Z"
-        },
-        {
-          id: 3,
-          judul: "Framework CSS Bootstrap",
-          deskripsi: "Menggunakan Bootstrap untuk responsive design",
-          file_path: "/uploads/materi/bootstrap-tutorial.pdf",
-          created_at: "2024-01-25T09:15:00Z"
-        }
-      ]);
+      setMateriList([]);
     } finally {
       setLoadingMateri(false);
     }

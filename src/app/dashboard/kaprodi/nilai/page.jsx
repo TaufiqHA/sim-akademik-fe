@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   getJadwalKuliahByProdi,
   getNilaiByJadwal,
-  finalizeNilai as apiFinalizeNilai
+  finalizeNilai as apiFinalizeNilai,
 } from "@/lib/api";
 import { getApiConfig } from "@/lib/api-test";
 import {
@@ -76,14 +76,16 @@ export default function NilaiManagementPage() {
       console.log("Jadwal kuliah API response:", response);
 
       // Ensure response is always an array
-      const jadwalData = Array.isArray(response) ? response : response?.data || [];
+      const jadwalData = Array.isArray(response)
+        ? response
+        : response?.data || [];
       setJadwalKuliah(jadwalData);
     } catch (error) {
       console.error("Error loading jadwal kuliah:", error);
       console.error("Error details:", {
         message: error.message,
         status: error.status,
-        data: error.data
+        data: error.data,
       });
 
       // Fallback data jika API gagal
@@ -121,14 +123,16 @@ export default function NilaiManagementPage() {
       console.log("Nilai API response:", response);
 
       // Ensure response is always an array
-      const nilaiData = Array.isArray(response) ? response : response?.data || [];
+      const nilaiData = Array.isArray(response)
+        ? response
+        : response?.data || [];
       setNilai(nilaiData);
     } catch (error) {
       console.error("Error loading nilai:", error);
       console.error("Error details:", {
         message: error.message,
         status: error.status,
-        data: error.data
+        data: error.data,
       });
 
       // Fallback data jika API gagal
@@ -179,9 +183,7 @@ export default function NilaiManagementPage() {
 
       // Update local state setelah sukses
       setNilai((prev) =>
-        prev.map((n) =>
-          n.id === nilaiId ? { ...n, status: "finalized" } : n
-        )
+        prev.map((n) => (n.id === nilaiId ? { ...n, status: "finalized" } : n))
       );
 
       toast({
@@ -193,7 +195,7 @@ export default function NilaiManagementPage() {
       console.error("Error details:", {
         message: error.message,
         status: error.status,
-        data: error.data
+        data: error.data,
       });
 
       // Handle specific error from API spec (409 - Di luar periode nilai)
@@ -240,10 +242,13 @@ export default function NilaiManagementPage() {
     return "E";
   };
 
-  const filteredNilai = Array.isArray(nilai) ? nilai.filter((n) =>
-    n.mahasiswa?.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    n.mahasiswa?.nim?.includes(searchTerm)
-  ) : [];
+  const filteredNilai = Array.isArray(nilai)
+    ? nilai.filter(
+        (n) =>
+          n.mahasiswa?.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          n.mahasiswa?.nim?.includes(searchTerm)
+      )
+    : [];
 
   if (loading && selectedJadwal === "all") {
     return (
@@ -259,36 +264,13 @@ export default function NilaiManagementPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Validasi Nilai & KHS</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Validasi Nilai & KHS
+        </h1>
         <p className="text-muted-foreground">
           Kelola dan validasi nilai mahasiswa program studi
         </p>
       </div>
-
-      {/* API Configuration Info - hanya untuk development */}
-      {apiConfig && process.env.NODE_ENV === 'development' && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="text-sm">API Status (Development)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div>
-                <p className="font-medium text-muted-foreground">API URL:</p>
-                <p className="font-mono">{apiConfig.apiUrl || 'Not configured'}</p>
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">Using Mock Data:</p>
-                <p>{apiConfig.useMockData ? 'Yes' : 'No'}</p>
-              </div>
-              <div>
-                <p className="font-medium text-muted-foreground">Prodi ID:</p>
-                <p>{user?.prodi_id || 'Not available'}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Filter Section */}
       <Card>
@@ -307,12 +289,13 @@ export default function NilaiManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Jadwal</SelectItem>
-                  {Array.isArray(jadwalKuliah) && jadwalKuliah.map((jadwal) => (
-                    <SelectItem key={jadwal.id} value={jadwal.id.toString()}>
-                      {jadwal.mata_kuliah?.kode_mk} - {jadwal.mata_kuliah?.nama_mk}
-                      ({jadwal.dosen?.nama})
-                    </SelectItem>
-                  ))}
+                  {Array.isArray(jadwalKuliah) &&
+                    jadwalKuliah.map((jadwal) => (
+                      <SelectItem key={jadwal.id} value={jadwal.id.toString()}>
+                        {jadwal.mata_kuliah?.kode_mk} -{" "}
+                        {jadwal.mata_kuliah?.nama_mk}({jadwal.dosen?.nama})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>

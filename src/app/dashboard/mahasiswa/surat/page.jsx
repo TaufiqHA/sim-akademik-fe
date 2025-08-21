@@ -93,29 +93,7 @@ export default function SuratPermintaanPage() {
       setSuratList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading surat data:", error);
-      // Mock data for demo
-      setSuratList([
-        {
-          id: 1,
-          jenis_dokumen: "surat_aktif_kuliah",
-          judul: "Surat Keterangan Aktif Kuliah",
-          keperluan: "Untuk keperluan beasiswa",
-          keterangan: "Surat dibutuhkan untuk mengajukan beasiswa dari pemerintah daerah",
-          status: "Approved",
-          created_at: "2024-01-15T10:00:00Z",
-          processed_at: "2024-01-16T09:30:00Z"
-        },
-        {
-          id: 2,
-          jenis_dokumen: "surat_cuti",
-          judul: "Surat Permohonan Cuti Akademik",
-          keperluan: "Sakit berkepanjangan",
-          keterangan: "Perlu cuti karena harus menjalani perawatan medis selama 6 bulan",
-          status: "Pending",
-          created_at: "2024-01-20T14:30:00Z",
-          processed_at: null
-        }
-      ]);
+      setSuratList([]);
     } finally {
       setLoading(false);
     }

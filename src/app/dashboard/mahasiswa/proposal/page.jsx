@@ -74,27 +74,7 @@ export default function ProposalSkripsiPage() {
       setProposalList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading proposal data:", error);
-      // Mock data for demo
-      setProposalList([
-        {
-          id: 1,
-          judul: "Sistem Informasi Manajemen Perpustakaan Berbasis Web",
-          deskripsi: "Proposal pengembangan sistem informasi untuk mengelola data perpustakaan secara digital",
-          file_path: "/uploads/proposal/proposal-v1.pdf",
-          status: "Pending",
-          created_at: "2024-01-15T10:00:00Z",
-          feedback: null
-        },
-        {
-          id: 2,
-          judul: "Aplikasi Mobile Learning untuk Pembelajaran Bahasa Inggris",
-          deskripsi: "Proposal pengembangan aplikasi mobile untuk pembelajaran bahasa Inggris interaktif",
-          file_path: "/uploads/proposal/proposal-v2.pdf",
-          status: "Approved",
-          created_at: "2024-01-20T14:30:00Z",
-          feedback: "Proposal sudah baik, silakan lanjutkan ke tahap berikutnya"
-        }
-      ]);
+      setProposalList([]);
     } finally {
       setLoading(false);
     }

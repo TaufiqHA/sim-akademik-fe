@@ -45,6 +45,7 @@ export default function KrsPage() {
   const { user } = useAuth();
   const [krsList, setKrsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedKrs, setSelectedKrs] = useState(null);
@@ -58,52 +59,13 @@ export default function KrsPage() {
   const loadKrsData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await getKrsMahasiswa(user.id);
       setKrsList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading KRS data:", error);
-      // Mock data for demo
-      setKrsList([
-        {
-          id: 1,
-          tahun_akademik: { id: 1, tahun: "2024/2025", semester: "Ganjil" },
-          status: "Draft",
-          total_sks: 18,
-          created_at: "2024-01-15T10:00:00Z",
-          details: [
-            {
-              id: 1,
-              jadwal_kuliah: {
-                id: 1,
-                mata_kuliah: { nama_mk: "Pemrograman Web", kode_mk: "TI301", sks: 3 },
-                dosen: { nama: "Dr. Ahmad" },
-                hari: "Senin",
-                jam_mulai: "08:00",
-                jam_selesai: "10:30"
-              }
-            },
-            {
-              id: 2,
-              jadwal_kuliah: {
-                id: 2,
-                mata_kuliah: { nama_mk: "Basis Data", kode_mk: "TI302", sks: 3 },
-                dosen: { nama: "Dr. Siti" },
-                hari: "Rabu",
-                jam_mulai: "10:30",
-                jam_selesai: "13:00"
-              }
-            }
-          ]
-        },
-        {
-          id: 2,
-          tahun_akademik: { id: 2, tahun: "2023/2024", semester: "Genap" },
-          status: "Approved",
-          total_sks: 21,
-          created_at: "2024-02-01T14:30:00Z",
-          details: []
-        }
-      ]);
+      setError(`Gagal memuat data KRS: ${error.message}`);
+      setKrsList([]);
     } finally {
       setLoading(false);
     }
@@ -166,6 +128,11 @@ export default function KrsPage() {
           <p className="text-muted-foreground">
             Kelola pengisian dan submisi KRS per semester
           </p>
+          {error && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
         </div>
         <Link href="/dashboard/mahasiswa/krs/isi">
           <Button>

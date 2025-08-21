@@ -41,7 +41,7 @@ import {
 import {
   IconClipboard,
   IconArrowLeft,
-  IconSave,
+  IconDeviceFloppy,
   IconCheck,
   IconX,
   IconSearch,
@@ -76,64 +76,7 @@ export default function IsiKrsPage() {
       setJadwalKuliah(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error loading jadwal kuliah:", error);
-      // Mock data for demo
-      setJadwalKuliah([
-        {
-          id: 1,
-          mata_kuliah: { id: 1, nama_mk: "Pemrograman Web", kode_mk: "TI301", sks: 3 },
-          dosen: { id: 1, nama: "Dr. Ahmad Rizki" },
-          ruang: "Lab Komputer 1",
-          hari: "Senin",
-          jam_mulai: "08:00",
-          jam_selesai: "10:30",
-          kapasitas: 30,
-          terisi: 25
-        },
-        {
-          id: 2,
-          mata_kuliah: { id: 2, nama_mk: "Basis Data", kode_mk: "TI302", sks: 3 },
-          dosen: { id: 2, nama: "Dr. Siti Aminah" },
-          ruang: "Lab Komputer 2",
-          hari: "Rabu",
-          jam_mulai: "10:30",
-          jam_selesai: "13:00",
-          kapasitas: 30,
-          terisi: 20
-        },
-        {
-          id: 3,
-          mata_kuliah: { id: 3, nama_mk: "Algoritma dan Struktur Data", kode_mk: "TI303", sks: 4 },
-          dosen: { id: 3, nama: "Dr. Budi Santoso" },
-          ruang: "Ruang 201",
-          hari: "Selasa",
-          jam_mulai: "13:00",
-          jam_selesai: "16:20",
-          kapasitas: 40,
-          terisi: 35
-        },
-        {
-          id: 4,
-          mata_kuliah: { id: 4, nama_mk: "Jaringan Komputer", kode_mk: "TI304", sks: 3 },
-          dosen: { id: 4, nama: "Dr. Maya Sari" },
-          ruang: "Lab Jaringan",
-          hari: "Kamis",
-          jam_mulai: "08:00",
-          jam_selesai: "10:30",
-          kapasitas: 25,
-          terisi: 15
-        },
-        {
-          id: 5,
-          mata_kuliah: { id: 5, nama_mk: "Sistem Operasi", kode_mk: "TI305", sks: 3 },
-          dosen: { id: 5, nama: "Dr. Andi Pratama" },
-          ruang: "Ruang 301",
-          hari: "Jumat",
-          jam_mulai: "09:00",
-          jam_selesai: "11:30",
-          kapasitas: 35,
-          terisi: 30
-        }
-      ]);
+      setJadwalKuliah([]);
     } finally {
       setLoading(false);
     }
@@ -347,7 +290,7 @@ export default function IsiKrsPage() {
             </div>
           ) : (
             <>
-              <IconSave className="w-4 h-4 mr-2" />
+              <IconDeviceFloppy className="w-4 h-4 mr-2" />
               Simpan KRS
             </>
           )}

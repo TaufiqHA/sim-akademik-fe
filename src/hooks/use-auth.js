@@ -20,13 +20,26 @@ export function AuthProvider({ children }) {
         const shouldAutoLogin = currentPath.startsWith('/dashboard') || currentPath === '/dashboard'
 
         if (shouldAutoLogin) {
-          const mockUser = {
-            id: 2,
-            nama: 'Dekan Fakultas Teknik',
-            email: 'dekan@ft.example.com',
-            role_id: 2, // Dekan
-            fakultas_id: 3, // Fakultas Teknik
-            prodi_id: null
+          // Determine user role based on current path
+          let mockUser
+          if (currentPath.includes('/dosen')) {
+            mockUser = {
+              id: 6,
+              nama: 'Dr. Ahmad Budi Santoso, M.Kom',
+              email: 'ahmad.budi@ft.example.com',
+              role_id: 6, // Dosen
+              fakultas_id: 3, // Fakultas Teknik
+              prodi_id: 5 // Program Studi Teknik Informatika
+            }
+          } else {
+            mockUser = {
+              id: 2,
+              nama: 'Dekan Fakultas Teknik',
+              email: 'dekan@ft.example.com',
+              role_id: 2, // Dekan
+              fakultas_id: 3, // Fakultas Teknik
+              prodi_id: null
+            }
           }
 
           if (typeof window !== 'undefined') {
