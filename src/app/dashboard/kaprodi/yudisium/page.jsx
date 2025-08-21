@@ -70,100 +70,54 @@ export default function YudisiumApprovalPage() {
   const loadYudisium = async () => {
     try {
       setLoading(true);
-      // Mock data - in real app: GET /dokumen-akademik?jenis_dokumen=yudisium&prodi_id={user.prodi_id}
-      setTimeout(() => {
-        setYudisium([
-          {
-            id: 1,
-            mahasiswa: { 
-              nama: "John Doe", 
-              nim: "2020001",
-              angkatan: "2020"
-            },
-            judul_skripsi: "Implementasi Machine Learning untuk Prediksi Cuaca",
-            pembimbing_1: "Dr. Ahmad Rizki",
-            pembimbing_2: "Prof. Sari Indah",
-            penguji_1: "Dr. Budi Santoso",
-            penguji_2: "Dr. Rina Kusuma",
-            tanggal_sidang: "2024-01-20",
-            nilai_sidang: 85,
-            ipk: 3.65,
-            total_sks: 144,
-            status: "Pending",
-            tanggal_upload: "2024-01-22",
-            dokumen: [
-              { nama: "Transkrip Nilai", status: "Complete" },
-              { nama: "Sertifikat TOEFL", status: "Complete" },
-              { nama: "Kartu Bebas Pustaka", status: "Complete" },
-              { nama: "Laporan Skripsi Final", status: "Complete" },
-              { nama: "Surat Keterangan Bebas Tunggakan", status: "Complete" },
-            ],
-          },
-          {
-            id: 2,
-            mahasiswa: { 
-              nama: "Jane Smith", 
-              nim: "2020002",
-              angkatan: "2020"
-            },
-            judul_skripsi: "Sistem Informasi Manajemen Perpustakaan Berbasis Web",
-            pembimbing_1: "Dr. Budi Santoso",
-            pembimbing_2: "M.Kom. Lisa Dewi",
-            penguji_1: "Dr. Ahmad Rizki",
-            penguji_2: "Dr. Rina Kusuma",
-            tanggal_sidang: "2024-01-18",
-            nilai_sidang: 88,
-            ipk: 3.75,
-            total_sks: 144,
-            status: "Approved",
-            tanggal_upload: "2024-01-19",
-            tanggal_approve: "2024-01-21",
-            dokumen: [
-              { nama: "Transkrip Nilai", status: "Complete" },
-              { nama: "Sertifikat TOEFL", status: "Complete" },
-              { nama: "Kartu Bebas Pustaka", status: "Complete" },
-              { nama: "Laporan Skripsi Final", status: "Complete" },
-              { nama: "Surat Keterangan Bebas Tunggakan", status: "Complete" },
-            ],
-          },
-          {
-            id: 3,
-            mahasiswa: { 
-              nama: "Bob Wilson", 
-              nim: "2021001",
-              angkatan: "2021"
-            },
-            judul_skripsi: "Aplikasi Mobile E-Commerce dengan Flutter",
-            pembimbing_1: "Dr. Rina Kusuma",
-            pembimbing_2: "M.T. Andi Prasetyo",
-            penguji_1: "Dr. Ahmad Rizki",
-            penguji_2: "Dr. Budi Santoso",
-            tanggal_sidang: "2024-01-15",
-            nilai_sidang: 75,
-            ipk: 3.45,
-            total_sks: 144,
-            status: "Pending",
-            tanggal_upload: "2024-01-16",
-            dokumen: [
-              { nama: "Transkrip Nilai", status: "Complete" },
-              { nama: "Sertifikat TOEFL", status: "Missing" },
-              { nama: "Kartu Bebas Pustaka", status: "Complete" },
-              { nama: "Laporan Skripsi Final", status: "Complete" },
-              { nama: "Surat Keterangan Bebas Tunggakan", status: "Complete" },
-            ],
-          },
-        ]);
-        setLoading(false);
-      }, 1000);
+
+      // Use API endpoint sesuai sim.json: GET /yudisium?prodi_id={user.prodi_id}
+      const { getYudisium } = await import("@/lib/api");
+
+      const params = {};
+      if (user?.prodi_id) {
+        params.prodi_id = user.prodi_id;
+      }
+
+      const yudisiumData = await getYudisium(params);
+      console.log("Yudisium API response:", yudisiumData);
+
+      // Ensure response is always an array and handle null/undefined
+      let yudisiumList = [];
+      if (Array.isArray(yudisiumData)) {
+        yudisiumList = yudisiumData;
+      } else if (yudisiumData && Array.isArray(yudisiumData.data)) {
+        yudisiumList = yudisiumData.data;
+      } else if (yudisiumData && yudisiumData.data) {
+        // If data exists but isn't an array, wrap it
+        yudisiumList = [yudisiumData.data];
+      }
+      setYudisium(yudisiumList);
     } catch (error) {
       console.error("Error loading yudisium:", error);
+
+      toast({
+        title: "Error",
+        description: "Gagal memuat data yudisium dari server.",
+        variant: "destructive",
+      });
+
+      // Set empty array when API fails - no mock data
+      setYudisium([]);
+    } finally {
       setLoading(false);
     }
   };
 
   const approveYudisium = async (yudisiumId) => {
     try {
-      // In real app: POST /dokumen-akademik/{yudisiumId}/approve
+      // Use API endpoint sesuai sim.json: POST /yudisium/{id}/approve
+      const { approveYudisium: apiApproveYudisium } = await import("@/lib/api");
+
+      const response = await apiApproveYudisium(yudisiumId);
+      console.log("Approve yudisium API response:", response);
+
+      // Update local state
       setYudisium((prev) =>
         prev.map((y) =>
           y.id === yudisiumId
@@ -184,17 +138,33 @@ export default function YudisiumApprovalPage() {
       setApprovalReason("");
     } catch (error) {
       console.error("Error approving yudisium:", error);
-      toast({
-        title: "Error",
-        description: "Gagal menyetujui yudisium",
-        variant: "destructive",
-      });
+
+      // Handle specific API errors
+      if (error.status === 403) {
+        toast({
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki hak untuk menyetujui yudisium ini",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Gagal menyetujui yudisium",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const rejectYudisium = async (yudisiumId) => {
     try {
-      // In real app: POST /dokumen-akademik/{yudisiumId}/reject
+      // Use API endpoint sesuai sim.json: POST /yudisium/{id}/reject
+      const { rejectYudisium: apiRejectYudisium } = await import("@/lib/api");
+
+      const response = await apiRejectYudisium(yudisiumId, rejectReason);
+      console.log("Reject yudisium API response:", response);
+
+      // Update local state
       setYudisium((prev) =>
         prev.map((y) =>
           y.id === yudisiumId
@@ -216,11 +186,21 @@ export default function YudisiumApprovalPage() {
       setRejectReason("");
     } catch (error) {
       console.error("Error rejecting yudisium:", error);
-      toast({
-        title: "Error",
-        description: "Gagal menolak yudisium",
-        variant: "destructive",
-      });
+
+      // Handle specific API errors
+      if (error.status === 403) {
+        toast({
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki hak untuk menolak yudisium ini",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Gagal menolak yudisium",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -251,7 +231,15 @@ export default function YudisiumApprovalPage() {
   };
 
   const getDokumenStatus = (dokumen) => {
-    const complete = dokumen.filter(d => d.status === "Complete").length;
+    if (!Array.isArray(dokumen) || dokumen.length === 0) {
+      return (
+        <Badge variant="destructive" className="bg-red-100 text-red-800">
+          Tidak Ada Dokumen
+        </Badge>
+      );
+    }
+
+    const complete = dokumen.filter(d => d && d.status === "Complete").length;
     const total = dokumen.length;
     
     if (complete === total) {
@@ -268,26 +256,50 @@ export default function YudisiumApprovalPage() {
     );
   };
 
+  const checkEligibility = async (yudisiumId) => {
+    try {
+      // Use API endpoint sesuai sim.json: GET /yudisium/{id}/check-eligibility
+      const { checkYudisiumEligibility } = await import("@/lib/api");
+
+      const eligibilityResult = await checkYudisiumEligibility(yudisiumId);
+      console.log("Check eligibility API response:", eligibilityResult);
+
+      return eligibilityResult;
+    } catch (error) {
+      console.error("Error checking eligibility:", error);
+
+      // Fallback to local check
+      return { is_eligible: false, reason: "Tidak dapat memeriksa kelayakan" };
+    }
+  };
+
   const isEligibleForApproval = (yudisiumItem) => {
-    const dokumenLengkap = yudisiumItem.dokumen.every(d => d.status === "Complete");
-    const ipkMemenuhi = yudisiumItem.ipk >= 2.0; // Minimal IPK
-    const sksMemenuhi = yudisiumItem.total_sks >= 144; // Minimal SKS
-    const nilaiMemenuhi = yudisiumItem.nilai_sidang >= 60; // Minimal nilai sidang
-    
+    if (!yudisiumItem) return false;
+
+    const dokumen = Array.isArray(yudisiumItem.dokumen) ? yudisiumItem.dokumen : [];
+    const dokumenLengkap = dokumen.length > 0 && dokumen.every(d => d && d.status === "Complete");
+    const ipkMemenuhi = (yudisiumItem.ipk || 0) >= 2.0; // Minimal IPK
+    const sksMemenuhi = (yudisiumItem.total_sks || 0) >= 144; // Minimal SKS
+    const nilaiMemenuhi = (yudisiumItem.nilai_sidang || 0) >= 60; // Minimal nilai sidang
+
     return dokumenLengkap && ipkMemenuhi && sksMemenuhi && nilaiMemenuhi;
   };
 
-  const filteredYudisium = yudisium.filter((item) => {
-    const matchesSearch =
-      item.mahasiswa.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.mahasiswa.nim.includes(searchTerm) ||
-      item.judul_skripsi.toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredYudisium = Array.isArray(yudisium) ? yudisium.filter((item) => {
+    if (!item) return false;
+
+    const searchTermLower = (searchTerm || "").toLowerCase();
+    const matchesSearch = !searchTerm || (
+      (item.mahasiswa?.nama || "").toLowerCase().includes(searchTermLower) ||
+      (item.mahasiswa?.nim || "").includes(searchTerm) ||
+      (item.judul_skripsi || "").toLowerCase().includes(searchTermLower)
+    );
+
     const matchesStatus =
       statusFilter === "all" || item.status === statusFilter;
 
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   if (loading) {
     return (
@@ -317,7 +329,7 @@ export default function YudisiumApprovalPage() {
             <IconCertificate className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{yudisium.length}</div>
+            <div className="text-2xl font-bold">{Array.isArray(yudisium) ? yudisium.length : 0}</div>
             <p className="text-xs text-muted-foreground">Pengajuan yudisium</p>
           </CardContent>
         </Card>
@@ -329,7 +341,7 @@ export default function YudisiumApprovalPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {yudisium.filter(y => y.status === "Pending").length}
+              {Array.isArray(yudisium) ? yudisium.filter(y => y && y.status === "Pending").length : 0}
             </div>
             <p className="text-xs text-muted-foreground">Perlu ditinjau</p>
           </CardContent>
@@ -342,7 +354,7 @@ export default function YudisiumApprovalPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {yudisium.filter(y => y.status === "Approved").length}
+              {Array.isArray(yudisium) ? yudisium.filter(y => y && y.status === "Approved").length : 0}
             </div>
             <p className="text-xs text-muted-foreground">Telah disetujui</p>
           </CardContent>
@@ -525,10 +537,10 @@ export default function YudisiumApprovalPage() {
                                 <div>
                                   <h4 className="font-semibold mb-2">Status Dokumen</h4>
                                   <div className="grid gap-2">
-                                    {selectedYudisium.dokumen.map((doc, index) => (
+                                    {Array.isArray(selectedYudisium.dokumen) && selectedYudisium.dokumen.map((doc, index) => (
                                       <div key={index} className="flex items-center justify-between p-2 border rounded">
-                                        <span>{doc.nama}</span>
-                                        {doc.status === "Complete" ? (
+                                        <span>{doc?.nama || 'Dokumen Tidak Diketahui'}</span>
+                                        {doc?.status === "Complete" ? (
                                           <Badge variant="default" className="bg-green-100 text-green-800">
                                             <IconCheck className="w-3 h-3 mr-1" />
                                             Lengkap

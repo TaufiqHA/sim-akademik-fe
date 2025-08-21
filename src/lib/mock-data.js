@@ -252,12 +252,9 @@ export const dashboardData = {
     jadwal_hari_ini: 3
   },
   kaprodi: {
+    total_jurusan: 3,
     total_mahasiswa: 145,
-    mahasiswa_aktif: 132,
-    total_dosen: 12,
-    proposal_pending: 8,
-    skripsi_progress: 23,
-    yudisium_siap: 5
+    total_dosen: 12
   },
   dekan: {
     total_prodi: 6,
@@ -267,3 +264,157 @@ export const dashboardData = {
     persetujuan_pending: 8
   }
 }
+
+// Mock data untuk jadwal kuliah
+export const mockJadwalKuliah = [
+  {
+    id: 1,
+    mata_kuliah_id: 1,
+    dosen_id: 4,
+    ruang: "Lab Komputer A",
+    hari: "Senin",
+    jam_mulai: "08:00",
+    jam_selesai: "10:30",
+    tahun_akademik_id: 1,
+    mata_kuliah: {
+      id: 1,
+      kode_mk: "IF301",
+      nama_mk: "Pemrograman Web",
+      sks: 3,
+      prodi_id: 5
+    },
+    dosen: {
+      id: 4,
+      nama: "Dr. Ahmad Rizki",
+      email: "ahmad@teknik.edu"
+    }
+  },
+  {
+    id: 2,
+    mata_kuliah_id: 2,
+    dosen_id: 7,
+    ruang: "Lab Komputer B",
+    hari: "Selasa",
+    jam_mulai: "10:30",
+    jam_selesai: "13:00",
+    tahun_akademik_id: 1,
+    mata_kuliah: {
+      id: 2,
+      kode_mk: "IF302",
+      nama_mk: "Basis Data",
+      sks: 3,
+      prodi_id: 5
+    },
+    dosen: {
+      id: 7,
+      nama: "Dr. Siti Aminah",
+      email: "siti@teknik.edu"
+    }
+  },
+  {
+    id: 3,
+    mata_kuliah_id: 3,
+    dosen_id: 8,
+    ruang: "Ruang 203",
+    hari: "Rabu",
+    jam_mulai: "14:00",
+    jam_selesai: "16:30",
+    tahun_akademik_id: 1,
+    mata_kuliah: {
+      id: 3,
+      kode_mk: "IF303",
+      nama_mk: "Sistem Operasi",
+      sks: 3,
+      prodi_id: 5
+    },
+    dosen: {
+      id: 8,
+      nama: "Prof. Andi Wijaya",
+      email: "andi@teknik.edu"
+    }
+  }
+];
+
+// Mock data untuk nilai
+export const mockNilai = [
+  {
+    id: 1,
+    mahasiswa_id: 10,
+    jadwal_kuliah_id: 1,
+    tugas: 85,
+    uts: 80,
+    uas: 88,
+    nilai_akhir: 84.5,
+    status: "pending",
+    mahasiswa: {
+      id: 10,
+      nama: "John Doe",
+      nim: "2020001",
+      email: "john@student.edu"
+    }
+  },
+  {
+    id: 2,
+    mahasiswa_id: 11,
+    jadwal_kuliah_id: 1,
+    tugas: 90,
+    uts: 85,
+    uas: 92,
+    nilai_akhir: 89.0,
+    status: "finalized",
+    mahasiswa: {
+      id: 11,
+      nama: "Jane Smith",
+      nim: "2020002",
+      email: "jane@student.edu"
+    }
+  },
+  {
+    id: 3,
+    mahasiswa_id: 12,
+    jadwal_kuliah_id: 1,
+    tugas: 78,
+    uts: 75,
+    uas: 80,
+    nilai_akhir: 77.5,
+    status: "pending",
+    mahasiswa: {
+      id: 12,
+      nama: "Bob Wilson",
+      nim: "2020003",
+      email: "bob@student.edu"
+    }
+  },
+  {
+    id: 4,
+    mahasiswa_id: 10,
+    jadwal_kuliah_id: 2,
+    tugas: 88,
+    uts: 82,
+    uas: 90,
+    nilai_akhir: 86.8,
+    status: "finalized",
+    mahasiswa: {
+      id: 10,
+      nama: "John Doe",
+      nim: "2020001",
+      email: "john@student.edu"
+    }
+  },
+  {
+    id: 5,
+    mahasiswa_id: 11,
+    jadwal_kuliah_id: 2,
+    tugas: 85,
+    uts: 88,
+    uas: 87,
+    nilai_akhir: 86.6,
+    status: "pending",
+    mahasiswa: {
+      id: 11,
+      nama: "Jane Smith",
+      nim: "2020002",
+      email: "jane@student.edu"
+    }
+  }
+];

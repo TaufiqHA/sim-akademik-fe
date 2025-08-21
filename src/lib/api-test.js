@@ -1,11 +1,11 @@
 // API Connection Test Utility
-import { getDashboardMahasiswa } from './api';
+import { getDashboardMahasiswa, getDashboardProdi } from './api';
 
 export async function testApiConnection() {
   console.log('Testing API connection...');
   console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
   console.log('Environment:', process.env.NODE_ENV);
-  
+
   try {
     const data = await getDashboardMahasiswa();
     console.log('✅ API connection successful');
@@ -13,6 +13,26 @@ export async function testApiConnection() {
     return { success: true, data };
   } catch (error) {
     console.log('❌ API connection failed');
+    console.log('Error:', error.message);
+    console.log('Status:', error.status);
+    console.log('Data:', error.data);
+    return { success: false, error };
+  }
+}
+
+export async function testKaprodiApiConnection(prodiId) {
+  console.log('Testing Kaprodi API connection...');
+  console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+  console.log('Prodi ID:', prodiId);
+  console.log('Environment:', process.env.NODE_ENV);
+
+  try {
+    const data = await getDashboardProdi(prodiId);
+    console.log('✅ Kaprodi API connection successful');
+    console.log('Response data:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.log('❌ Kaprodi API connection failed');
     console.log('Error:', error.message);
     console.log('Status:', error.status);
     console.log('Data:', error.data);

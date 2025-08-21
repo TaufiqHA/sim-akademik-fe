@@ -76,7 +76,7 @@ export default function SkripsiApprovalPage() {
     try {
       setLoading(true);
 
-      // Parameters untuk API call
+      // Parameters untuk API call sesuai sim.json: GET /dokumen-akademik?jenis_dokumen=skripsi
       const params = {
         jenis_dokumen: "skripsi"
       };
@@ -87,9 +87,13 @@ export default function SkripsiApprovalPage() {
       }
 
       const response = await getDokumenAkademik(params);
+      console.log("Proposal skripsi API response:", response);
+
+      // Ensure response is always an array
+      const responseArray = Array.isArray(response) ? response : response?.data || [];
 
       // Transform API response ke format yang dibutuhkan
-      const transformedProposals = response.map(item => ({
+      const transformedProposals = responseArray.map(item => ({
         id: item.id,
         judul: item.judul || `Proposal Skripsi #${item.id}`,
         mahasiswa: {
@@ -147,6 +151,7 @@ export default function SkripsiApprovalPage() {
 
   const approveProposal = async (proposalId) => {
     try {
+      // Use API endpoint sesuai sim.json: POST /dokumen-akademik/{id}/approve
       await approveDokumenAkademik(proposalId);
 
       // Update local state
@@ -171,16 +176,27 @@ export default function SkripsiApprovalPage() {
       setApprovalReason("");
     } catch (error) {
       console.error("Error approving proposal:", error);
-      toast({
-        title: "Error",
-        description: "Gagal menyetujui proposal",
-        variant: "destructive",
-      });
+
+      // Handle specific API errors
+      if (error.status === 403) {
+        toast({
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki hak untuk menyetujui proposal ini",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Gagal menyetujui proposal",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const rejectProposal = async (proposalId) => {
     try {
+      // Use API endpoint sesuai sim.json: POST /dokumen-akademik/{id}/reject
       await rejectDokumenAkademik(proposalId, rejectReason);
 
       // Update local state
@@ -205,11 +221,21 @@ export default function SkripsiApprovalPage() {
       setRejectReason("");
     } catch (error) {
       console.error("Error rejecting proposal:", error);
-      toast({
-        title: "Error",
-        description: "Gagal menolak proposal",
-        variant: "destructive",
-      });
+
+      // Handle specific API errors
+      if (error.status === 403) {
+        toast({
+          title: "Akses Ditolak",
+          description: "Anda tidak memiliki hak untuk menolak proposal ini",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Gagal menolak proposal",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -262,17 +288,17 @@ export default function SkripsiApprovalPage() {
     }
   };
 
-  const filteredProposals = proposals.filter((proposal) => {
+  const filteredProposals = Array.isArray(proposals) ? proposals.filter((proposal) => {
     const matchesSearch =
-      proposal.judul.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proposal.mahasiswa.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      proposal.mahasiswa.nim.includes(searchTerm);
-    
+      proposal.judul?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      proposal.mahasiswa?.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      proposal.mahasiswa?.nim?.includes(searchTerm);
+
     const matchesStatus =
       statusFilter === "all" || proposal.status === statusFilter;
 
     return matchesSearch && matchesStatus;
-  });
+  }) : [];
 
   if (loading) {
     return (

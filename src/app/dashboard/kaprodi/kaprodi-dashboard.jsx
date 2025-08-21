@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { getDashboardProdi } from "@/lib/api";
+import { testKaprodiApiConnection, getApiConfig } from "@/lib/api-test";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   IconUsers,
   IconSchool,
@@ -17,17 +19,38 @@ export default function KaprodiDashboard() {
     total_dosen: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [apiConfig, setApiConfig] = useState(null);
 
   useEffect(() => {
     if (user?.prodi_id) {
       loadDashboardData();
     }
+    setApiConfig(getApiConfig());
   }, [user]);
+
+  const handleTestApi = async () => {
+    if (!user?.prodi_id) {
+      alert('❌ Prodi ID tidak tersedia');
+      return;
+    }
+
+    console.log('Manual Kaprodi API test triggered for prodi_id:', user.prodi_id);
+    const result = await testKaprodiApiConnection(user.prodi_id);
+    if (result.success) {
+      alert('✅ Kaprodi API Connection Successful!\nCheck console for details.');
+    } else {
+      alert('❌ Kaprodi API Connection Failed!\nCheck console for error details.');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      console.log("Loading dashboard data for prodi_id:", user.prodi_id);
       const response = await getDashboardProdi(user.prodi_id);
+      console.log("Dashboard API response:", response);
+
+      // Sesuai dengan API spec sim.json: /dashboard/prodi/{id}
       setDashboardData({
         total_jurusan: response.total_jurusan || 0,
         total_mahasiswa: response.total_mahasiswa || 0,
@@ -35,12 +58,21 @@ export default function KaprodiDashboard() {
       });
     } catch (error) {
       console.error("Error loading dashboard data:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
+
       // Fallback ke mock data jika API gagal
-      setDashboardData({
+      const fallbackData = {
         total_jurusan: 3,
         total_mahasiswa: 150,
         total_dosen: 12,
-      });
+      };
+
+      console.log("Using fallback data:", fallbackData);
+      setDashboardData(fallbackData);
     } finally {
       setLoading(false);
     }
@@ -66,6 +98,7 @@ export default function KaprodiDashboard() {
           {user?.prodi_id ? `ID: ${user.prodi_id}` : ""}
         </p>
       </div>
+
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -104,43 +137,6 @@ export default function KaprodiDashboard() {
       </div>
 
 
-      {/* Recent Activities */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Aktivitas Terkini</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <div>
-                <p className="text-sm font-medium">5 nilai menunggu validasi</p>
-                <p className="text-xs text-muted-foreground">
-                  Mata kuliah Pemrograman Web
-                </p>
-              </div>
-              <span className="text-xs text-orange-600">Menunggu</span>
-            </div>
-            <div className="flex items-center justify-between border-b pb-2">
-              <div>
-                <p className="text-sm font-medium">3 proposal skripsi baru</p>
-                <p className="text-xs text-muted-foreground">
-                  Menunggu persetujuan
-                </p>
-              </div>
-              <span className="text-xs text-blue-600">Baru</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">2 yudisium siap disetujui</p>
-                <p className="text-xs text-muted-foreground">
-                  Dokumen lengkap
-                </p>
-              </div>
-              <span className="text-xs text-green-600">Siap</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

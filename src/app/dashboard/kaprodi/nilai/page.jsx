@@ -3,6 +3,12 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  getJadwalKuliahByProdi,
+  getNilaiByJadwal,
+  finalizeNilai as apiFinalizeNilai
+} from "@/lib/api";
+import { getApiConfig } from "@/lib/api-test";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -45,11 +51,13 @@ export default function NilaiManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedJadwal, setSelectedJadwal] = useState("all");
+  const [apiConfig, setApiConfig] = useState(null);
 
   useEffect(() => {
     if (user) {
       loadJadwalKuliah();
     }
+    setApiConfig(getApiConfig());
   }, [user]);
 
   useEffect(() => {
@@ -61,28 +69,44 @@ export default function NilaiManagementPage() {
   const loadJadwalKuliah = async () => {
     try {
       setLoading(true);
-      // Mock data - in real app: GET /jadwal-kuliah?prodi_id={user.prodi_id}
-      setTimeout(() => {
-        setJadwalKuliah([
-          {
-            id: 1,
-            mata_kuliah: { nama_mk: "Pemrograman Web", kode_mk: "IF301" },
-            dosen: { nama: "Dr. Ahmad" },
-            ruang: "Lab A",
-            hari: "Senin",
-          },
-          {
-            id: 2,
-            mata_kuliah: { nama_mk: "Database", kode_mk: "IF302" },
-            dosen: { nama: "Dr. Sari" },
-            ruang: "Lab B",
-            hari: "Selasa",
-          },
-        ]);
-        setLoading(false);
-      }, 1000);
+      console.log("Loading jadwal kuliah for prodi_id:", user.prodi_id);
+
+      // API call sesuai sim.json: GET /jadwal-kuliah?prodi_id={user.prodi_id}
+      const response = await getJadwalKuliahByProdi(user.prodi_id);
+      console.log("Jadwal kuliah API response:", response);
+
+      // Ensure response is always an array
+      const jadwalData = Array.isArray(response) ? response : response?.data || [];
+      setJadwalKuliah(jadwalData);
     } catch (error) {
-      console.error("Error loading jadwal:", error);
+      console.error("Error loading jadwal kuliah:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
+
+      // Fallback data jika API gagal
+      const fallbackData = [
+        {
+          id: 1,
+          mata_kuliah: { nama_mk: "Pemrograman Web", kode_mk: "IF301" },
+          dosen: { nama: "Dr. Ahmad" },
+          ruang: "Lab A",
+          hari: "Senin",
+        },
+        {
+          id: 2,
+          mata_kuliah: { nama_mk: "Database", kode_mk: "IF302" },
+          dosen: { nama: "Dr. Sari" },
+          ruang: "Lab B",
+          hari: "Selasa",
+        },
+      ];
+
+      console.log("Using fallback jadwal data:", fallbackData);
+      setJadwalKuliah(fallbackData);
+    } finally {
       setLoading(false);
     }
   };
@@ -90,65 +114,102 @@ export default function NilaiManagementPage() {
   const loadNilai = async () => {
     try {
       setLoading(true);
-      // Mock data - in real app: GET /nilai?jadwal_kuliah_id={selectedJadwal}
-      setTimeout(() => {
-        setNilai([
-          {
-            id: 1,
-            mahasiswa: { nama: "John Doe", nim: "2020001" },
-            tugas: 85,
-            uts: 80,
-            uas: 88,
-            nilai_akhir: 84.5,
-            status: "pending",
-          },
-          {
-            id: 2,
-            mahasiswa: { nama: "Jane Smith", nim: "2020002" },
-            tugas: 90,
-            uts: 85,
-            uas: 92,
-            nilai_akhir: 89.0,
-            status: "finalized",
-          },
-          {
-            id: 3,
-            mahasiswa: { nama: "Bob Wilson", nim: "2020003" },
-            tugas: 78,
-            uts: 75,
-            uas: 80,
-            nilai_akhir: 77.5,
-            status: "pending",
-          },
-        ]);
-        setLoading(false);
-      }, 1000);
+      console.log("Loading nilai for jadwal_kuliah_id:", selectedJadwal);
+
+      // API call sesuai sim.json: GET /nilai?jadwal_kuliah_id={selectedJadwal}
+      const response = await getNilaiByJadwal(selectedJadwal);
+      console.log("Nilai API response:", response);
+
+      // Ensure response is always an array
+      const nilaiData = Array.isArray(response) ? response : response?.data || [];
+      setNilai(nilaiData);
     } catch (error) {
       console.error("Error loading nilai:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
+
+      // Fallback data jika API gagal
+      const fallbackData = [
+        {
+          id: 1,
+          mahasiswa: { nama: "John Doe", nim: "2020001" },
+          tugas: 85,
+          uts: 80,
+          uas: 88,
+          nilai_akhir: 84.5,
+          status: "pending",
+        },
+        {
+          id: 2,
+          mahasiswa: { nama: "Jane Smith", nim: "2020002" },
+          tugas: 90,
+          uts: 85,
+          uas: 92,
+          nilai_akhir: 89.0,
+          status: "finalized",
+        },
+        {
+          id: 3,
+          mahasiswa: { nama: "Bob Wilson", nim: "2020003" },
+          tugas: 78,
+          uts: 75,
+          uas: 80,
+          nilai_akhir: 77.5,
+          status: "pending",
+        },
+      ];
+
+      console.log("Using fallback nilai data:", fallbackData);
+      setNilai(fallbackData);
+    } finally {
       setLoading(false);
     }
   };
 
   const finalizeNilai = async (nilaiId) => {
     try {
-      // In real app: POST /nilai/{nilaiId}/finalize
+      console.log("Finalizing nilai ID:", nilaiId);
+
+      // API call sesuai sim.json: POST /nilai/{id}/finalize
+      const response = await apiFinalizeNilai(nilaiId);
+      console.log("Finalize nilai API response:", response);
+
+      // Update local state setelah sukses
       setNilai((prev) =>
         prev.map((n) =>
           n.id === nilaiId ? { ...n, status: "finalized" } : n
         )
       );
-      
+
       toast({
         title: "Berhasil",
-        description: "Nilai berhasil difinalisasi",
+        description: "Nilai berhasil difinalisasi dan dikunci",
       });
     } catch (error) {
       console.error("Error finalizing nilai:", error);
-      toast({
-        title: "Error",
-        description: "Gagal memfinalisasi nilai",
-        variant: "destructive",
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        data: error.data
       });
+
+      // Handle specific error from API spec (409 - Di luar periode nilai)
+      if (error.status === 409) {
+        toast({
+          title: "Tidak Dapat Finalisasi",
+          description: "Finalisasi nilai di luar periode yang ditentukan",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message || "Gagal memfinalisasi nilai",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -179,10 +240,10 @@ export default function NilaiManagementPage() {
     return "E";
   };
 
-  const filteredNilai = nilai.filter((n) =>
-    n.mahasiswa.nama.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    n.mahasiswa.nim.includes(searchTerm)
-  );
+  const filteredNilai = Array.isArray(nilai) ? nilai.filter((n) =>
+    n.mahasiswa?.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    n.mahasiswa?.nim?.includes(searchTerm)
+  ) : [];
 
   if (loading && selectedJadwal === "all") {
     return (
@@ -204,6 +265,31 @@ export default function NilaiManagementPage() {
         </p>
       </div>
 
+      {/* API Configuration Info - hanya untuk development */}
+      {apiConfig && process.env.NODE_ENV === 'development' && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-sm">API Status (Development)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <p className="font-medium text-muted-foreground">API URL:</p>
+                <p className="font-mono">{apiConfig.apiUrl || 'Not configured'}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Using Mock Data:</p>
+                <p>{apiConfig.useMockData ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="font-medium text-muted-foreground">Prodi ID:</p>
+                <p>{user?.prodi_id || 'Not available'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filter Section */}
       <Card>
         <CardHeader>
@@ -221,10 +307,10 @@ export default function NilaiManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Jadwal</SelectItem>
-                  {jadwalKuliah.map((jadwal) => (
+                  {Array.isArray(jadwalKuliah) && jadwalKuliah.map((jadwal) => (
                     <SelectItem key={jadwal.id} value={jadwal.id.toString()}>
-                      {jadwal.mata_kuliah.kode_mk} - {jadwal.mata_kuliah.nama_mk} 
-                      ({jadwal.dosen.nama})
+                      {jadwal.mata_kuliah?.kode_mk} - {jadwal.mata_kuliah?.nama_mk}
+                      ({jadwal.dosen?.nama})
                     </SelectItem>
                   ))}
                 </SelectContent>

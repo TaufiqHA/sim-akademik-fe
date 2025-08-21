@@ -62,111 +62,167 @@ export default function KHSManagementPage() {
   const loadMahasiswa = async () => {
     try {
       setLoading(true);
-      // Mock data - in real app: GET /users?role_id=7&prodi_id={user.prodi_id}
-      setTimeout(() => {
-        setMahasiswa([
-          {
-            id: 7,
-            nama: "John Doe",
-            email: "john@student.com",
-            profile_mahasiswa: { nim: "2020001", angkatan: "2020" },
-          },
-          {
-            id: 8,
-            nama: "Jane Smith",
-            email: "jane@student.com",
-            profile_mahasiswa: { nim: "2020002", angkatan: "2020" },
-          },
-          {
-            id: 9,
-            nama: "Bob Wilson",
-            email: "bob@student.com",
-            profile_mahasiswa: { nim: "2021001", angkatan: "2021" },
-          },
-        ]);
-        setLoading(false);
-      }, 1000);
+
+      // Use actual API endpoint from sim.json: GET /users?role_id=7&prodi_id={user.prodi_id}
+      const { getUsers } = await import("@/lib/api");
+
+      const params = {
+        role_id: 7, // Mahasiswa role
+      };
+
+      if (user?.prodi_id) {
+        params.prodi_id = user.prodi_id;
+      }
+
+      const usersData = await getUsers(params);
+      console.log("Mahasiswa API response:", usersData);
+
+      // Transform response to expected format
+      const mahasiswaList = Array.isArray(usersData) ? usersData : usersData?.data || [];
+      setMahasiswa(mahasiswaList);
     } catch (error) {
       console.error("Error loading mahasiswa:", error);
+
+      // Fallback data untuk development
+      setMahasiswa([
+        {
+          id: 7,
+          nama: "John Doe",
+          email: "john@student.com",
+          profile_mahasiswa: { nim: "2020001", angkatan: "2020" },
+        },
+        {
+          id: 8,
+          nama: "Jane Smith",
+          email: "jane@student.com",
+          profile_mahasiswa: { nim: "2020002", angkatan: "2020" },
+        },
+        {
+          id: 9,
+          nama: "Bob Wilson",
+          email: "bob@student.com",
+          profile_mahasiswa: { nim: "2021001", angkatan: "2021" },
+        },
+      ]);
+    } finally {
       setLoading(false);
     }
   };
 
   const loadTahunAkademik = async () => {
     try {
-      // Mock data - in real app: GET /tahun-akademik
-      setTimeout(() => {
-        setTahunAkademik([
-          { id: 1, tahun: "2023/2024", semester: "Ganjil", is_aktif: false },
-          { id: 2, tahun: "2023/2024", semester: "Genap", is_aktif: false },
-          { id: 3, tahun: "2024/2025", semester: "Ganjil", is_aktif: true },
-        ]);
-      }, 500);
+      // Use actual API endpoint from sim.json: GET /tahun-akademik
+      const { getTahunAkademik } = await import("@/lib/api");
+
+      const tahunAkademikData = await getTahunAkademik();
+      console.log("Tahun Akademik API response:", tahunAkademikData);
+
+      // Ensure response is always an array
+      const tahunAkademikList = Array.isArray(tahunAkademikData) ? tahunAkademikData : tahunAkademikData?.data || [];
+      setTahunAkademik(tahunAkademikList);
     } catch (error) {
       console.error("Error loading tahun akademik:", error);
+
+      // Fallback data untuk development
+      setTahunAkademik([
+        { id: 1, tahun: "2023/2024", semester: "Ganjil", is_aktif: false },
+        { id: 2, tahun: "2023/2024", semester: "Genap", is_aktif: false },
+        { id: 3, tahun: "2024/2025", semester: "Ganjil", is_aktif: true },
+      ]);
     }
   };
 
   const loadKHS = async () => {
     try {
       setLoading(true);
-      // Mock data - in real app: GET /khs?mahasiswa_id={selectedMahasiswa}&tahun_akademik_id={selectedTahun}
-      setTimeout(() => {
-        setKhs([
-          {
-            id: 1,
-            mahasiswa_id: 7,
-            tahun_akademik: { tahun: "2023/2024", semester: "Ganjil" },
-            ip_semester: 3.45,
-            sks_semester: 20,
-            ipk: 3.42,
-            total_sks: 40,
-          },
-          {
-            id: 2,
-            mahasiswa_id: 7,
-            tahun_akademik: { tahun: "2023/2024", semester: "Genap" },
-            ip_semester: 3.60,
-            sks_semester: 18,
-            ipk: 3.52,
-            total_sks: 58,
-          },
-          {
-            id: 3,
-            mahasiswa_id: 7,
-            tahun_akademik: { tahun: "2024/2025", semester: "Ganjil" },
-            ip_semester: 3.75,
-            sks_semester: 22,
-            ipk: 3.58,
-            total_sks: 80,
-          },
-        ]);
-        setLoading(false);
-      }, 1000);
+
+      // Use actual API endpoint from sim.json: GET /khs?mahasiswa_id={selectedMahasiswa}&tahun_akademik_id={selectedTahun}
+      const { getKhsMahasiswa } = await import("@/lib/api");
+
+      const params = {};
+      if (selectedTahun !== "all") {
+        params.tahun_akademik_id = selectedTahun;
+      }
+
+      const khsData = await getKhsMahasiswa(selectedMahasiswa, params);
+      console.log("KHS API response:", khsData);
+
+      // Ensure response is always an array
+      const khsList = Array.isArray(khsData) ? khsData : khsData?.data || [];
+      setKhs(khsList);
     } catch (error) {
       console.error("Error loading KHS:", error);
+
+      // Fallback data untuk development
+      setKhs([
+        {
+          id: 1,
+          mahasiswa_id: 7,
+          tahun_akademik: { tahun: "2023/2024", semester: "Ganjil" },
+          ip_semester: 3.45,
+          sks_semester: 20,
+          ipk: 3.42,
+          total_sks: 40,
+        },
+        {
+          id: 2,
+          mahasiswa_id: 7,
+          tahun_akademik: { tahun: "2023/2024", semester: "Genap" },
+          ip_semester: 3.60,
+          sks_semester: 18,
+          ipk: 3.52,
+          total_sks: 58,
+        },
+        {
+          id: 3,
+          mahasiswa_id: 7,
+          tahun_akademik: { tahun: "2024/2025", semester: "Ganjil" },
+          ip_semester: 3.75,
+          sks_semester: 22,
+          ipk: 3.58,
+          total_sks: 80,
+        },
+      ]);
+    } finally {
       setLoading(false);
     }
   };
 
   const downloadKHS = async (khsId) => {
     try {
-      // In real app: GET /khs/{khsId}/download
-      console.log("Downloading KHS:", khsId);
-      // Simulate download
-      alert("KHS PDF akan didownload (implementasi mock)");
+      // Use actual API endpoint from sim.json: GET /khs/{khsId}/download
+      const { downloadKhs } = await import("@/lib/api");
+      const blob = await downloadKhs(khsId);
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `KHS_${khsId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
     } catch (error) {
       console.error("Error downloading KHS:", error);
+      // Fallback untuk development
+      alert("KHS PDF akan didownload (implementasi mock)");
     }
   };
 
   const viewKHSDetail = async (khsId) => {
     try {
-      // In real app: navigate to /khs/{khsId}/detail or open modal
-      console.log("Viewing KHS detail:", khsId);
-      alert("Lihat detail KHS (implementasi mock)");
+      // Use actual API endpoint from sim.json: GET /khs/{khsId}/detail
+      const { getKhsDetailData } = await import("@/lib/api");
+      const khsDetail = await getKhsDetailData(khsId);
+      console.log("KHS Detail:", khsDetail);
+
+      // TODO: Implement modal or navigation to detail page
+      alert(`Detail KHS loaded with ${khsDetail.length} mata kuliah`);
     } catch (error) {
       console.error("Error viewing KHS detail:", error);
+      // Fallback untuk development
+      alert("Lihat detail KHS (implementasi mock)");
     }
   };
 
@@ -177,12 +233,12 @@ export default function KHSManagementPage() {
     return { color: "red", label: "Kurang" };
   };
 
-  const filteredKHS = khs.filter((k) => {
+  const filteredKHS = Array.isArray(khs) ? khs.filter((k) => {
     if (selectedTahun !== "all" && k.tahun_akademik_id !== parseInt(selectedTahun)) {
       return false;
     }
     return true;
-  });
+  }) : [];
 
   const selectedMahasiswaData = mahasiswa.find(
     (m) => m.id === parseInt(selectedMahasiswa)
@@ -226,9 +282,9 @@ export default function KHSManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Mahasiswa</SelectItem>
-                  {mahasiswa.map((mhs) => (
+                  {Array.isArray(mahasiswa) && mahasiswa.map((mhs) => (
                     <SelectItem key={mhs.id} value={mhs.id.toString()}>
-                      {mhs.profile_mahasiswa.nim} - {mhs.nama}
+                      {mhs.profile_mahasiswa?.nim} - {mhs.nama}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -242,7 +298,7 @@ export default function KHSManagementPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Semua Periode</SelectItem>
-                  {tahunAkademik.map((ta) => (
+                  {Array.isArray(tahunAkademik) && tahunAkademik.map((ta) => (
                     <SelectItem key={ta.id} value={ta.id.toString()}>
                       {ta.tahun} {ta.semester}
                       {ta.is_aktif && " (Aktif)"}

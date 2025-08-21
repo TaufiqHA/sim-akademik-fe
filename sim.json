@@ -1,2259 +1,2360 @@
 {
-    "openapi": "3.0.3",
-    "info": {
-        "title": "SIM Akademik API",
-        "version": "1.0.0",
-        "description": "API untuk Sistem Informasi Manajemen Akademik (SIM AKADEMIK).\n\nMendukung peran: Super Admin, Dekan, Kaprodi, TU Fakultas, TU Prodi, Dosen, Mahasiswa.\n\nCatatan RBAC: Gunakan `security: [{ \"bearerAuth\": [] }]` pada endpoint yang memerlukan autentikasi. Hak akses per peran diinformasikan pada deskripsi tiap path menggunakan ekstensi `x-roles`."
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SIM Akademik API",
+    "version": "1.0.0",
+    "description": "API untuk Sistem Informasi Manajemen Akademik (SIM AKADEMIK).\n\nMendukung peran: Super Admin, Dekan, Kaprodi, TU Fakultas, TU Prodi, Dosen, Mahasiswa.\n\nCatatan RBAC: Gunakan `security: [{ \"bearerAuth\": [] }]` pada endpoint yang memerlukan autentikasi. Hak akses per peran diinformasikan pada deskripsi tiap path menggunakan ekstensi `x-roles`."
+  },
+  "servers": [
+    { "url": "http://localhost:8000/api", "description": "Local" },
+    { "url": "https://simak.example.com/api", "description": "Production" }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Users" },
+    { "name": "Roles" },
+    { "name": "Fakultas" },
+    { "name": "Prodi" },
+    { "name": "Jurusan" },
+    { "name": "Tahun Akademik" },
+    { "name": "Mata Kuliah" },
+    { "name": "Jadwal Kuliah" },
+    { "name": "KRS" },
+    { "name": "KHS" },
+    { "name": "Nilai" },
+    { "name": "Materi Kuliah" },
+    { "name": "Dokumen Akademik" },
+    { "name": "Dashboard" },
+    { "name": "Monitoring" },
+    { "name": "Backup & Restore" }
+  ],
+  "security": [{ "bearerAuth": [] }],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
     },
-    "servers": [
-        { "url": "http://localhost:8000/api", "description": "Local" },
-        { "url": "https://simak.example.com/api", "description": "Production" }
-    ],
-    "tags": [
-        { "name": "Auth" },
-        { "name": "Users" },
-        { "name": "Roles" },
-        { "name": "Fakultas" },
-        { "name": "Prodi" },
-        { "name": "Jurusan" },
-        { "name": "Tahun Akademik" },
-        { "name": "Mata Kuliah" },
-        { "name": "Jadwal Kuliah" },
-        { "name": "KRS" },
-        { "name": "KHS" },
-        { "name": "Nilai" },
-        { "name": "Materi Kuliah" },
-        { "name": "Dokumen Akademik" },
-        { "name": "Dashboard" },
-        { "name": "Monitoring" },
-        { "name": "Backup & Restore" }
-    ],
-    "security": [{ "bearerAuth": [] }],
-    "components": {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
+    "parameters": {
+      "PageParam": {
+        "name": "page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1 },
+        "description": "Nomor halaman"
+      },
+      "PerPageParam": {
+        "name": "per_page",
+        "in": "query",
+        "schema": { "type": "integer", "minimum": 1, "maximum": 200 },
+        "description": "Jumlah data per halaman"
+      },
+      "SearchParam": {
+        "name": "q",
+        "in": "query",
+        "schema": { "type": "string" },
+        "description": "Pencarian bebas"
+      },
+      "ID": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      }
+    },
+    "responses": {
+      "Unauthorized": { "description": "Tidak terotorisasi" },
+      "Forbidden": { "description": "Dilarang (tidak punya hak akses)" },
+      "NotFound": { "description": "Data tidak ditemukan" },
+      "ValidationError": {
+        "description": "Validasi gagal",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": { "type": "string" }
             }
-        },
-        "parameters": {
-            "PageParam": {
-                "name": "page",
-                "in": "query",
-                "schema": { "type": "integer", "minimum": 1 },
-                "description": "Nomor halaman"
-            },
-            "PerPageParam": {
-                "name": "per_page",
-                "in": "query",
-                "schema": { "type": "integer", "minimum": 1, "maximum": 200 },
-                "description": "Jumlah data per halaman"
-            },
-            "SearchParam": {
-                "name": "q",
-                "in": "query",
-                "schema": { "type": "string" },
-                "description": "Pencarian bebas"
-            },
-            "ID": {
-                "name": "id",
-                "in": "path",
-                "required": true,
-                "schema": { "type": "integer" }
+          }
+        }
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nama_role": { "type": "string" }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nama": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role_id": { "type": "integer" },
+          "fakultas_id": { "type": ["integer", "null"] },
+          "prodi_id": { "type": ["integer", "null"] },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "UserCreate": {
+        "type": "object",
+        "required": ["nama", "email", "password", "role_id"],
+        "properties": {
+          "nama": { "type": "string", "maxLength": 100 },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6 },
+          "role_id": { "type": "integer" },
+          "fakultas_id": { "type": ["integer", "null"] },
+          "prodi_id": { "type": ["integer", "null"] }
+        }
+      },
+      "UserUpdate": {
+        "type": "object",
+        "properties": {
+          "nama": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6 },
+          "role_id": { "type": "integer" },
+          "fakultas_id": { "type": ["integer", "null"] },
+          "prodi_id": { "type": ["integer", "null"] }
+        }
+      },
+      "MahasiswaProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "nim": { "type": "string" },
+          "angkatan": { "type": "string", "pattern": "^\\d{4}$" },
+          "status": {
+            "type": "string",
+            "enum": ["Aktif", "Cuti", "Lulus", "DO"]
+          }
+        }
+      },
+      "DosenProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "user_id": { "type": "integer" },
+          "nidn": { "type": "string" },
+          "jabatan": { "type": "string" }
+        }
+      },
+      "Fakultas": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "nama_fakultas": { "type": "string" }
+        }
+      },
+      "Prodi": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "fakultas_id": { "type": "integer" },
+          "nama_prodi": { "type": "string" }
+        }
+      },
+      "Jurusan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "prodi_id": { "type": "integer" },
+          "nama_jurusan": { "type": "string" }
+        }
+      },
+      "TahunAkademik": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "tahun": { "type": "string", "example": "2024/2025" },
+          "semester": {
+            "type": "string",
+            "enum": ["Ganjil", "Genap"]
+          },
+          "is_aktif": { "type": "boolean" },
+          "periode_krs_mulai": { "type": "string", "format": "date" },
+          "periode_krs_selesai": {
+            "type": "string",
+            "format": "date"
+          },
+          "periode_nilai_mulai": {
+            "type": "string",
+            "format": "date"
+          },
+          "periode_nilai_selesai": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "MataKuliah": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "kode_mk": { "type": "string" },
+          "nama_mk": { "type": "string" },
+          "sks": { "type": "integer" },
+          "prodi_id": { "type": "integer" }
+        }
+      },
+      "JadwalKuliah": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "mata_kuliah_id": { "type": "integer" },
+          "dosen_id": { "type": "integer" },
+          "ruang": { "type": "string" },
+          "hari": { "type": "string" },
+          "jam_mulai": { "type": "string", "format": "time" },
+          "jam_selesai": { "type": "string", "format": "time" },
+          "tahun_akademik_id": { "type": "integer" }
+        }
+      },
+      "KRS": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "mahasiswa_id": { "type": "integer" },
+          "tahun_akademik_id": { "type": "integer" },
+          "status": {
+            "type": "string",
+            "enum": ["Draft", "Submitted", "Approved"]
+          }
+        }
+      },
+      "KRSDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "krs_id": { "type": "integer" },
+          "jadwal_kuliah_id": { "type": "integer" }
+        }
+      },
+      "KHS": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "mahasiswa_id": { "type": "integer" },
+          "tahun_akademik_id": { "type": "integer" },
+          "ip_semester": { "type": "number", "format": "float" },
+          "sks_semester": { "type": "integer" }
+        }
+      },
+      "KHSDetail": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "khs_id": { "type": "integer" },
+          "mata_kuliah_id": { "type": "integer" },
+          "nilai_huruf": { "type": "string" },
+          "nilai_angka": { "type": "number", "format": "float" }
+        }
+      },
+      "Nilai": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "mahasiswa_id": { "type": "integer" },
+          "jadwal_kuliah_id": { "type": "integer" },
+          "tugas": { "type": "number" },
+          "uts": { "type": "number" },
+          "uas": { "type": "number" },
+          "nilai_akhir": { "type": "number" }
+        }
+      },
+      "MateriKuliah": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "jadwal_kuliah_id": { "type": "integer" },
+          "dosen_id": { "type": "integer" },
+          "judul": { "type": "string" },
+          "file_path": { "type": "string" }
+        }
+      },
+      "DokumenAkademik": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "jenis_dokumen": { "type": "string" },
+          "file_path": { "type": "string" },
+          "uploaded_by": { "type": "integer" },
+          "approved_by": { "type": ["integer", "null"] },
+          "status": {
+            "type": "string",
+            "enum": ["Pending", "Approved", "Rejected"]
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string" },
+          "token_type": { "type": "string", "example": "Bearer" },
+          "expires_in": { "type": "integer" },
+          "user": { "$ref": "#/components/schemas/User" }
+        }
+      },
+      "Yudisium": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "mahasiswa_id": { "type": "integer" },
+          "ipk": { "type": "number", "format": "float" },
+          "nilai_sidang": { "type": "number", "format": "float" },
+          "pembimbing_id": { "type": "integer" },
+          "penguji_id": { "type": "integer" },
+          "status": {
+            "type": "string",
+            "enum": ["Pending", "Approved", "Rejected"]
+          },
+          "alasan_reject": { "type": ["string", "null"] },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
             }
+          }
         },
         "responses": {
-            "Unauthorized": { "description": "Tidak terotorisasi" },
-            "Forbidden": { "description": "Dilarang (tidak punya hak akses)" },
-            "NotFound": { "description": "Data tidak ditemukan" },
-            "ValidationError": {
-                "description": "Validasi gagal",
-                "content": {
-                    "application/json": {
-                        "schema": { "$ref": "#/components/schemas/Error" }
-                    }
+          "200": {
+            "description": "Berhasil login",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
                 }
+              }
             }
-        },
-        "schemas": {
-            "Error": {
-                "type": "object",
-                "properties": {
-                    "message": { "type": "string" },
-                    "errors": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": { "type": "string" }
-                        }
-                    }
-                }
-            },
-            "Role": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "nama_role": { "type": "string" }
-                }
-            },
-            "User": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "nama": { "type": "string" },
-                    "email": { "type": "string", "format": "email" },
-                    "role_id": { "type": "integer" },
-                    "fakultas_id": { "type": ["integer", "null"] },
-                    "prodi_id": { "type": ["integer", "null"] },
-                    "created_at": { "type": "string", "format": "date-time" },
-                    "updated_at": { "type": "string", "format": "date-time" }
-                }
-            },
-            "UserCreate": {
-                "type": "object",
-                "required": ["nama", "email", "password", "role_id"],
-                "properties": {
-                    "nama": { "type": "string", "maxLength": 100 },
-                    "email": { "type": "string", "format": "email" },
-                    "password": { "type": "string", "minLength": 6 },
-                    "role_id": { "type": "integer" },
-                    "fakultas_id": { "type": ["integer", "null"] },
-                    "prodi_id": { "type": ["integer", "null"] }
-                }
-            },
-            "UserUpdate": {
-                "type": "object",
-                "properties": {
-                    "nama": { "type": "string" },
-                    "email": { "type": "string", "format": "email" },
-                    "password": { "type": "string", "minLength": 6 },
-                    "role_id": { "type": "integer" },
-                    "fakultas_id": { "type": ["integer", "null"] },
-                    "prodi_id": { "type": ["integer", "null"] }
-                }
-            },
-            "MahasiswaProfile": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "user_id": { "type": "integer" },
-                    "nim": { "type": "string" },
-                    "angkatan": { "type": "string", "pattern": "^\\d{4}$" },
-                    "status": {
-                        "type": "string",
-                        "enum": ["Aktif", "Cuti", "Lulus", "DO"]
-                    }
-                }
-            },
-            "DosenProfile": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "user_id": { "type": "integer" },
-                    "nidn": { "type": "string" },
-                    "jabatan": { "type": "string" }
-                }
-            },
-            "Fakultas": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "nama_fakultas": { "type": "string" }
-                }
-            },
-            "Prodi": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "fakultas_id": { "type": "integer" },
-                    "nama_prodi": { "type": "string" }
-                }
-            },
-            "Jurusan": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "prodi_id": { "type": "integer" },
-                    "nama_jurusan": { "type": "string" }
-                }
-            },
-            "TahunAkademik": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "tahun": { "type": "string", "example": "2024/2025" },
-                    "semester": {
-                        "type": "string",
-                        "enum": ["Ganjil", "Genap"]
-                    },
-                    "is_aktif": { "type": "boolean" },
-                    "periode_krs_mulai": { "type": "string", "format": "date" },
-                    "periode_krs_selesai": {
-                        "type": "string",
-                        "format": "date"
-                    },
-                    "periode_nilai_mulai": {
-                        "type": "string",
-                        "format": "date"
-                    },
-                    "periode_nilai_selesai": {
-                        "type": "string",
-                        "format": "date"
-                    }
-                }
-            },
-            "MataKuliah": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "kode_mk": { "type": "string" },
-                    "nama_mk": { "type": "string" },
-                    "sks": { "type": "integer" },
-                    "prodi_id": { "type": "integer" }
-                }
-            },
-            "JadwalKuliah": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "mata_kuliah_id": { "type": "integer" },
-                    "dosen_id": { "type": "integer" },
-                    "ruang": { "type": "string" },
-                    "hari": { "type": "string" },
-                    "jam_mulai": { "type": "string", "format": "time" },
-                    "jam_selesai": { "type": "string", "format": "time" },
-                    "tahun_akademik_id": { "type": "integer" }
-                }
-            },
-            "KRS": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "mahasiswa_id": { "type": "integer" },
-                    "tahun_akademik_id": { "type": "integer" },
-                    "status": {
-                        "type": "string",
-                        "enum": ["Draft", "Submitted", "Approved"]
-                    }
-                }
-            },
-            "KRSDetail": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "krs_id": { "type": "integer" },
-                    "jadwal_kuliah_id": { "type": "integer" }
-                }
-            },
-            "KHS": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "mahasiswa_id": { "type": "integer" },
-                    "tahun_akademik_id": { "type": "integer" },
-                    "ip_semester": { "type": "number", "format": "float" },
-                    "sks_semester": { "type": "integer" }
-                }
-            },
-            "KHSDetail": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "khs_id": { "type": "integer" },
-                    "mata_kuliah_id": { "type": "integer" },
-                    "nilai_huruf": { "type": "string" },
-                    "nilai_angka": { "type": "number", "format": "float" }
-                }
-            },
-            "Nilai": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "mahasiswa_id": { "type": "integer" },
-                    "jadwal_kuliah_id": { "type": "integer" },
-                    "tugas": { "type": "number" },
-                    "uts": { "type": "number" },
-                    "uas": { "type": "number" },
-                    "nilai_akhir": { "type": "number" }
-                }
-            },
-            "MateriKuliah": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "jadwal_kuliah_id": { "type": "integer" },
-                    "dosen_id": { "type": "integer" },
-                    "judul": { "type": "string" },
-                    "file_path": { "type": "string" }
-                }
-            },
-            "DokumenAkademik": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "integer" },
-                    "jenis_dokumen": { "type": "string" },
-                    "file_path": { "type": "string" },
-                    "uploaded_by": { "type": "integer" },
-                    "approved_by": { "type": ["integer", "null"] },
-                    "status": {
-                        "type": "string",
-                        "enum": ["Pending", "Approved", "Rejected"]
-                    }
-                }
-            },
-            "LoginRequest": {
-                "type": "object",
-                "required": ["email", "password"],
-                "properties": {
-                    "email": { "type": "string", "format": "email" },
-                    "password": { "type": "string" }
-                }
-            },
-            "LoginResponse": {
-                "type": "object",
-                "properties": {
-                    "access_token": { "type": "string" },
-                    "token_type": { "type": "string", "example": "Bearer" },
-                    "expires_in": { "type": "integer" },
-                    "user": { "$ref": "#/components/schemas/User" }
-                }
-            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
+      }
     },
-    "paths": {
-        "/auth/login": {
-            "post": {
-                "tags": ["Auth"],
-                "summary": "Login",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/LoginRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Berhasil login",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    },
-                    "401": { "$ref": "#/components/responses/Unauthorized" }
-                }
-            }
-        },
-        "/auth/logout": {
-            "post": {
-                "tags": ["Auth"],
-                "summary": "Logout",
-                "responses": {
-                    "204": { "description": "Logout berhasil" },
-                    "401": { "$ref": "#/components/responses/Unauthorized" }
-                }
-            }
-        },
-        "/auth/me": {
-            "get": {
-                "tags": ["Auth"],
-                "summary": "Profil user saat ini",
-                "responses": {
-                    "200": {
-                        "description": "Detail user",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
-                    },
-                    "401": { "$ref": "#/components/responses/Unauthorized" }
-                }
-            }
-        },
-        "/auth/refresh": {
-            "post": {
-                "tags": ["Auth"],
-                "summary": "Refresh token",
-                "responses": {
-                    "200": {
-                        "description": "Token baru",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/LoginResponse"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/roles": {
-            "get": {
-                "tags": ["Roles"],
-                "summary": "List role",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Role"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-roles": ["Super Admin"]
-            },
-            "post": {
-                "tags": ["Roles"],
-                "summary": "Buat role",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Role" }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": { "description": "Created" },
-                    "422": { "$ref": "#/components/responses/ValidationError" }
-                },
-                "x-roles": ["Super Admin"]
-            }
-        },
-        "/roles/{id}": {
-            "get": {
-                "tags": ["Roles"],
-                "summary": "Detail role",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Role"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Roles"],
-                "summary": "Ubah role",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Role" }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Roles"],
-                "summary": "Hapus role",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/users": {
-            "get": {
-                "tags": ["Users"],
-                "summary": "List user",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    { "$ref": "#/components/parameters/SearchParam" },
-                    {
-                        "name": "role_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/User"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-roles": ["Super Admin", "TU Fakultas", "TU Prodi"]
-            },
-            "post": {
-                "tags": ["Users"],
-                "summary": "Buat user",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserCreate"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": { "description": "Created" },
-                    "422": { "$ref": "#/components/responses/ValidationError" }
-                },
-                "x-roles": ["Super Admin", "TU Fakultas", "TU Prodi"]
-            }
-        },
-        "/users/{id}": {
-            "get": {
-                "tags": ["Users"],
-                "summary": "Detail user",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/User"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Users"],
-                "summary": "Ubah user",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/UserUpdate"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Users"],
-                "summary": "Hapus user",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-        "/users/{id}/profile-mahasiswa": {
-            "get": {
-                "tags": ["Users"],
-                "summary": "Lihat profil mahasiswa",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/MahasiswaProfile"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "post": {
-                "tags": ["Users"],
-                "summary": "Buat/Update profil mahasiswa",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/MahasiswaProfile"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": { "description": "Saved" },
-                    "422": { "$ref": "#/components/responses/ValidationError" }
-                }
-            },
-            "patch": {
-                "tags": ["Mahasiswa Profile"],
-                "summary": "Update sebagian data profil mahasiswa",
-                "description": "Update data profil mahasiswa secara partial.",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "description": "ID user (mahasiswa)",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "nim": { "type": "string" },
-                                    "tanggal_lahir": {
-                                        "type": "string",
-                                        "format": "date"
-                                    },
-                                    "alamat": { "type": "string" },
-                                    "angkatan": { "type": "integer" },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "aktif",
-                                            "nonaktif",
-                                            "cuti",
-                                            "lulus"
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Profil mahasiswa berhasil diperbarui (partial)",
-                        "content": {
-                            "application/json": {
-                                "example": {
-                                    "message": "Profil mahasiswa berhasil diperbarui",
-                                    "data": {
-                                        "user_id": 7,
-                                        "nim": "2256001",
-                                        "alamat": "Jl. Pahlawan No. 12, Bandung",
-                                        "angkatan": 2023,
-                                        "status": "cuti"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Profil mahasiswa tidak ditemukan"
-                    }
-                }
-            }
-        },
-        "/users/{id}/profile-dosen": {
-            "get": {
-                "tags": ["Users"],
-                "summary": "Lihat profil dosen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DosenProfile"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "post": {
-                "tags": ["Users"],
-                "summary": "Buat/Update profil dosen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/DosenProfile"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Saved" } }
-            },
-            "put": {
-                "tags": ["Dosen Profile"],
-                "summary": "Update profil dosen",
-                "description": "Update penuh data profil dosen berdasarkan user_id.",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "description": "ID user (dosen)",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["nidn", "jabatan", "status"],
-                                "properties": {
-                                    "nidn": {
-                                        "type": "string",
-                                        "maxLength": 20
-                                    },
-                                    "jabatan": {
-                                        "type": "string",
-                                        "maxLength": 100
-                                    },
-                                    "keahlian": {
-                                        "type": "string",
-                                        "maxLength": 255
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": ["aktif", "nonaktif", "pensiun"]
-                                    }
-                                }
-                            },
-                            "example": {
-                                "nidn": "123456789",
-                                "jabatan": "Lektor Kepala",
-                                "keahlian": "Kecerdasan Buatan",
-                                "status": "aktif"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Profil dosen berhasil diperbarui (full update)",
-                        "content": {
-                            "application/json": {
-                                "example": {
-                                    "message": "Profil dosen berhasil diperbarui",
-                                    "data": {
-                                        "user_id": 6,
-                                        "nidn": "123456789",
-                                        "jabatan": "Lektor Kepala",
-                                        "keahlian": "Kecerdasan Buatan",
-                                        "status": "aktif"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Profil dosen tidak ditemukan"
-                    }
-                }
-            },
-            "patch": {
-                "tags": ["Dosen Profile"],
-                "summary": "Update sebagian profil dosen",
-                "description": "Update sebagian data profil dosen berdasarkan user_id.",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "description": "ID user (dosen)",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "nidn": {
-                                        "type": "string",
-                                        "maxLength": 20
-                                    },
-                                    "jabatan": {
-                                        "type": "string",
-                                        "maxLength": 100
-                                    },
-                                    "keahlian": {
-                                        "type": "string",
-                                        "maxLength": 255
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "enum": ["aktif", "nonaktif", "pensiun"]
-                                    }
-                                }
-                            },
-                            "example": {
-                                "keahlian": "Sistem Informasi",
-                                "status": "nonaktif"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Profil dosen berhasil diperbarui (partial update)",
-                        "content": {
-                            "application/json": {
-                                "example": {
-                                    "message": "Profil dosen berhasil diperbarui",
-                                    "data": {
-                                        "user_id": 6,
-                                        "nidn": "123456789",
-                                        "jabatan": "Lektor Kepala",
-                                        "keahlian": "Sistem Informasi",
-                                        "status": "nonaktif"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Profil dosen tidak ditemukan"
-                    }
-                }
-            }
-        },
-
-        "/fakultas": {
-            "get": {
-                "tags": ["Fakultas"],
-                "summary": "List fakultas",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Fakultas"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Fakultas"],
-                "summary": "Buat fakultas",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Fakultas"
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/fakultas/{id}": {
-            "get": {
-                "tags": ["Fakultas"],
-                "summary": "Detail fakultas",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Fakultas"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Fakultas"],
-                "summary": "Ubah fakultas",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/Fakultas"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Fakultas"],
-                "summary": "Hapus fakultas",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/prodi": {
-            "get": {
-                "tags": ["Prodi"],
-                "summary": "List prodi",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "fakultas_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Prodi"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Prodi"],
-                "summary": "Buat prodi",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Prodi" }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/prodi/{id}": {
-            "get": {
-                "tags": ["Prodi"],
-                "summary": "Detail prodi",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Prodi"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Prodi"],
-                "summary": "Ubah prodi",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Prodi" }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Prodi"],
-                "summary": "Hapus prodi",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/jurusan": {
-            "get": {
-                "tags": ["Jurusan"],
-                "summary": "List jurusan",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "prodi_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Jurusan"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Jurusan"],
-                "summary": "Buat jurusan",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Jurusan" }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/jurusan/{id}": {
-            "get": {
-                "tags": ["Jurusan"],
-                "summary": "Detail jurusan",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Jurusan"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Jurusan"],
-                "summary": "Ubah jurusan",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": { "$ref": "#/components/schemas/Jurusan" }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Jurusan"],
-                "summary": "Hapus jurusan",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/tahun-akademik": {
-            "get": {
-                "tags": ["Tahun Akademik"],
-                "summary": "List tahun akademik",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "is_aktif",
-                        "in": "query",
-                        "schema": { "type": "boolean" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/TahunAkademik"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Tahun Akademik"],
-                "summary": "Buat tahun akademik",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TahunAkademik"
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/tahun-akademik/{id}": {
-            "get": {
-                "tags": ["Tahun Akademik"],
-                "summary": "Detail",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/TahunAkademik"
-                                }
-                            }
-                        }
-                    },
-                    "404": { "$ref": "#/components/responses/NotFound" }
-                }
-            },
-            "put": {
-                "tags": ["Tahun Akademik"],
-                "summary": "Ubah",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/TahunAkademik"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Tahun Akademik"],
-                "summary": "Hapus",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-        "/tahun-akademik/{id}/set-aktif": {
-            "post": {
-                "tags": ["Tahun Akademik"],
-                "summary": "Set aktif (nonaktifkan yang lain)",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "200": { "description": "OK" } }
-            }
-        },
-
-        "/mata-kuliah": {
-            "get": {
-                "tags": ["Mata Kuliah"],
-                "summary": "List mata kuliah",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "prodi_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/MataKuliah"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Mata Kuliah"],
-                "summary": "Buat mata kuliah",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/MataKuliah"
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/mata-kuliah/{id}": {
-            "get": {
-                "tags": ["Mata Kuliah"],
-                "summary": "Detail",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/MataKuliah"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "tags": ["Mata Kuliah"],
-                "summary": "Ubah",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/MataKuliah"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Mata Kuliah"],
-                "summary": "Hapus",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/jadwal-kuliah": {
-            "get": {
-                "tags": ["Jadwal Kuliah"],
-                "summary": "List jadwal",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "prodi_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "tahun_akademik_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "dosen_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/JadwalKuliah"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Jadwal Kuliah"],
-                "summary": "Buat jadwal",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/JadwalKuliah"
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/jadwal-kuliah/{id}": {
-            "get": {
-                "tags": ["Jadwal Kuliah"],
-                "summary": "Detail",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/JadwalKuliah"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "tags": ["Jadwal Kuliah"],
-                "summary": "Ubah",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/JadwalKuliah"
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Updated" } }
-            },
-            "delete": {
-                "tags": ["Jadwal Kuliah"],
-                "summary": "Hapus",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/krs": {
-            "get": {
-                "tags": ["KRS"],
-                "summary": "List KRS (by mahasiswa/TA)",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "mahasiswa_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "tahun_akademik_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": ["Draft", "Submitted", "Approved"]
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/KRS"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["KRS"],
-                "summary": "Buat KRS (Draft)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "mahasiswa_id",
-                                    "tahun_akademik_id"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "mahasiswa_id": { "type": "integer" },
-                                    "tahun_akademik_id": { "type": "integer" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/krs/{id}": {
-            "get": {
-                "tags": ["KRS"],
-                "summary": "Detail KRS",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": { "$ref": "#/components/schemas/KRS" }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": ["KRS"],
-                "summary": "Hapus KRS (Draft saja)",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-        "/krs/{id}/submit": {
-            "post": {
-                "tags": ["KRS"],
-                "summary": "Submit KRS",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": { "description": "Submitted" },
-                    "409": {
-                        "description": "Tidak dapat submit (di luar periode KRS / tidak Draft)"
-                    }
-                }
-            }
-        },
-        "/krs/{id}/approve": {
-            "post": {
-                "tags": ["KRS"],
-                "summary": "Approve KRS (Wali/Kaprodi/TU)",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "200": { "description": "Approved" } },
-                "x-roles": ["TU Prodi", "Kaprodi", "Dosen (Wali)"]
-            }
-        },
-        "/krs/{id}/detail": {
-            "get": {
-                "tags": ["KRS"],
-                "summary": "List detail KRS",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/KRSDetail"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["KRS"],
-                "summary": "Tambah detail KRS",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": ["jadwal_kuliah_id"],
-                                "type": "object",
-                                "properties": {
-                                    "jadwal_kuliah_id": { "type": "integer" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Created" } }
-            }
-        },
-        "/krs/{id}/detail/{detailId}": {
-            "delete": {
-                "tags": ["KRS"],
-                "summary": "Hapus detail KRS",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "detailId",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-
-        "/nilai": {
-            "get": {
-                "tags": ["Nilai"],
-                "summary": "List nilai (filterable)",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "mahasiswa_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "jadwal_kuliah_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Nilai"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Nilai"],
-                "summary": "Input/Update nilai oleh dosen",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "required": [
-                                    "mahasiswa_id",
-                                    "jadwal_kuliah_id"
-                                ],
-                                "type": "object",
-                                "properties": {
-                                    "mahasiswa_id": { "type": "integer" },
-                                    "jadwal_kuliah_id": { "type": "integer" },
-                                    "tugas": { "type": "number" },
-                                    "uts": { "type": "number" },
-                                    "uas": { "type": "number" }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Saved" } }
-            }
-        },
-        "/nilai/{id}": {
-            "get": {
-                "tags": ["Nilai"],
-                "summary": "Detail nilai",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/Nilai"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": ["Nilai"],
-                "summary": "Hapus nilai",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-        "/nilai/{id}/finalize": {
-            "post": {
-                "tags": ["Nilai"],
-                "summary": "Hitung & kunci nilai akhir (periode nilai)",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": { "description": "Finalized" },
-                    "409": { "description": "Di luar periode nilai" }
-                }
-            }
-        },
-
-        "/khs": {
-            "get": {
-                "summary": "List KHS",
-                "parameters": [
-                    {
-                        "name": "mahasiswa_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "tahun_akademik_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Daftar KHS mahasiswa"
-                    }
-                }
-            }
-        },
-
-        "/khs/{id}": {
-            "get": {
-                "summary": "Detail KHS",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "Detail data KHS" },
-                    "404": { "description": "Data tidak ditemukan" }
-                }
-            }
-        },
-
-        "/khs/{id}/detail": {
-            "get": {
-                "summary": "Daftar mata kuliah dalam KHS",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "Daftar mata kuliah dalam KHS" }
-                }
-            }
-        },
-
-        "/khs/{id}/download": {
-            "get": {
-                "summary": "Download KHS dalam bentuk PDF",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "File PDF KHS" }
-                }
-            }
-        },
-
-        "/khs/generate": {
-            "post": {
-                "summary": "Generate KHS dari nilai mahasiswa (tambahan)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "mahasiswa_id": { "type": "integer" },
-                                    "tahun_akademik_id": { "type": "integer" }
-                                },
-                                "required": [
-                                    "mahasiswa_id",
-                                    "tahun_akademik_id"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": { "description": "KHS berhasil digenerate" },
-                    "404": {
-                        "description": "Nilai belum ada untuk semester ini"
-                    }
-                }
-            }
-        },
-
-        "/khs/ipk/{mahasiswa_id}": {
-            "get": {
-                "summary": "Hitung IPK kumulatif (tambahan)",
-                "parameters": [
-                    {
-                        "name": "mahasiswa_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "Nilai IPK kumulatif mahasiswa" }
-                }
-            }
-        },
-
-        "/materi-kuliah": {
-            "get": {
-                "summary": "List Materi Kuliah",
-                "parameters": [
-                    {
-                        "name": "jadwal_kuliah_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Daftar materi kuliah"
-                    }
-                }
-            },
-            "post": {
-                "summary": "Upload Materi Kuliah",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "jadwal_kuliah_id": { "type": "integer" },
-                                    "judul": { "type": "string" },
-                                    "deskripsi": { "type": "string" },
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                },
-                                "required": [
-                                    "jadwal_kuliah_id",
-                                    "judul",
-                                    "file"
-                                ]
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "201": { "description": "Materi berhasil diupload" },
-                    "400": { "description": "Validasi gagal" }
-                }
-            }
-        },
-        "/materi-kuliah/{id}": {
-            "get": {
-                "summary": "Detail Materi Kuliah",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "Detail materi kuliah" },
-                    "404": { "description": "Data tidak ditemukan" }
-                }
-            },
-            "put": {
-                "summary": "Update Materi Kuliah",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "judul": { "type": "string" },
-                                    "deskripsi": { "type": "string" },
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": { "description": "Materi berhasil diperbarui" },
-                    "404": { "description": "Data tidak ditemukan" }
-                }
-            },
-            "delete": {
-                "summary": "Hapus Materi Kuliah",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": { "type": "integer" }
-                    }
-                ],
-                "responses": {
-                    "200": { "description": "Materi berhasil dihapus" },
-                    "404": { "description": "Data tidak ditemukan" }
-                }
-            }
-        },
-
-        "/dokumen-akademik": {
-            "get": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "List dokumen",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "status",
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": ["Pending", "Approved", "Rejected"]
-                        }
-                    },
-                    {
-                        "name": "jenis_dokumen",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/DokumenAkademik"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "Upload dokumen (multipart)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["jenis_dokumen", "file"],
-                                "properties": {
-                                    "jenis_dokumen": { "type": "string" },
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "201": { "description": "Uploaded" } }
-            }
-        },
-        "/dokumen-akademik/{id}": {
-            "get": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "Detail dokumen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/DokumenAkademik"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "Hapus dokumen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "204": { "description": "Deleted" } }
-            }
-        },
-        "/dokumen-akademik/{id}/approve": {
-            "post": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "Approve dokumen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": { "200": { "description": "Approved" } },
-                "x-roles": ["Dekan", "Kaprodi"]
-            }
-        },
-        "/dokumen-akademik/{id}/reject": {
-            "post": {
-                "tags": ["Dokumen Akademik"],
-                "summary": "Reject dokumen",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "requestBody": {
-                    "required": false,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "type": "object",
-                                "properties": { "alasan": { "type": "string" } }
-                            }
-                        }
-                    }
-                },
-                "responses": { "200": { "description": "Rejected" } }
-            }
-        },
-
-        "/dashboard/super-admin": {
-            "get": {
-                "tags": ["Dashboard"],
-                "summary": "Ringkas Super Admin",
-                "responses": {
-                    "200": {
-                        "description": "Statistik sistem",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "total_user": { "type": "integer" },
-                                        "total_fakultas": { "type": "integer" },
-                                        "total_prodi": { "type": "integer" },
-                                        "total_mahasiswa": {
-                                            "type": "integer"
-                                        },
-                                        "total_dosen": { "type": "integer" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dashboard/fakultas/{id}": {
-            "get": {
-                "tags": ["Dashboard"],
-                "summary": "Ringkas Fakultas",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "Statistik fakultas",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "total_prodi": { "type": "integer" },
-                                        "total_dosen": { "type": "integer" },
-                                        "total_mahasiswa": { "type": "integer" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dashboard/prodi/{id}": {
-            "get": {
-                "tags": ["Dashboard"],
-                "summary": "Ringkas Prodi",
-                "parameters": [{ "$ref": "#/components/parameters/ID" }],
-                "responses": {
-                    "200": {
-                        "description": "Statistik prodi",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "total_jurusan": { "type": "integer" },
-                                        "total_mahasiswa": {
-                                            "type": "integer"
-                                        },
-                                        "total_dosen": { "type": "integer" }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dashboard/dosen": {
-            "get": {
-                "tags": ["Dashboard"],
-                "summary": "Ringkas Dosen",
-                "responses": {
-                    "200": {
-                        "description": "Statistik dosen",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "jumlah_kelas_diampu": {
-                                            "type": "integer"
-                                        },
-                                        "jumlah_mahasiswa_bimbingan": {
-                                            "type": "integer"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dashboard/mahasiswa": {
-            "get": {
-                "tags": ["Dashboard"],
-                "summary": "Ringkas Mahasiswa",
-                "responses": {
-                    "200": {
-                        "description": "Info akademik",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "ipk": { "type": "number" },
-                                        "sks": { "type": "integer" },
-                                        "notifikasi": {
-                                            "type": "array",
-                                            "items": { "type": "string" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/monitoring/log-aktivitas": {
-            "get": {
-                "tags": ["Monitoring"],
-                "summary": "Log aktivitas",
-                "parameters": [
-                    { "$ref": "#/components/parameters/PageParam" },
-                    { "$ref": "#/components/parameters/PerPageParam" },
-                    {
-                        "name": "user_id",
-                        "in": "query",
-                        "schema": { "type": "integer" }
-                    },
-                    {
-                        "name": "aksi",
-                        "in": "query",
-                        "schema": { "type": "string" }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "properties": {
-                                            "id": { "type": "integer" },
-                                            "user_id": { "type": "integer" },
-                                            "aksi": { "type": "string" },
-                                            "entitas": { "type": "string" },
-                                            "payload": { "type": "object" },
-                                            "created_at": {
-                                                "type": "string",
-                                                "format": "date-time"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        "/backup/export": {
-            "get": {
-                "tags": ["Backup & Restore"],
-                "summary": "Export data (zip)",
-                "parameters": [
-                    {
-                        "name": "format",
-                        "in": "query",
-                        "schema": {
-                            "type": "string",
-                            "enum": ["csv", "sql", "xlsx"],
-                            "default": "csv"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "File ZIP",
-                        "content": {
-                            "application/zip": {
-                                "schema": {
-                                    "type": "string",
-                                    "format": "binary"
-                                }
-                            }
-                        }
-                    }
-                },
-                "x-roles": ["Super Admin"]
-            }
-        },
-        "/backup/import": {
-            "post": {
-                "tags": ["Backup & Restore"],
-                "summary": "Import data (zip)",
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "multipart/form-data": {
-                            "schema": {
-                                "type": "object",
-                                "required": ["file"],
-                                "properties": {
-                                    "file": {
-                                        "type": "string",
-                                        "format": "binary"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "responses": { "202": { "description": "Import dijalankan" } },
-                "x-roles": ["Super Admin"]
-            }
+    "/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Logout",
+        "responses": {
+          "204": { "description": "Logout berhasil" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Profil user saat ini",
+        "responses": {
+          "200": {
+            "description": "Detail user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh token",
+        "responses": {
+          "200": {
+            "description": "Token baru",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/roles": {
+      "get": {
+        "tags": ["Roles"],
+        "summary": "List role",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Role"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-roles": ["Super Admin"]
+      },
+      "post": {
+        "tags": ["Roles"],
+        "summary": "Buat role",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Role" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        },
+        "x-roles": ["Super Admin"]
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "tags": ["Roles"],
+        "summary": "Detail role",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Role"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Roles"],
+        "summary": "Ubah role",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Role" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Roles"],
+        "summary": "Hapus role",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "List user",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          { "$ref": "#/components/parameters/SearchParam" },
+          {
+            "name": "role_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-roles": ["Super Admin", "TU Fakultas", "TU Prodi"]
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Buat user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        },
+        "x-roles": ["Super Admin", "TU Fakultas", "TU Prodi"]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Detail user",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Users"],
+        "summary": "Ubah user",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Hapus user",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/users/{id}/profile-mahasiswa": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lihat profil mahasiswa",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MahasiswaProfile"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Buat/Update profil mahasiswa",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MahasiswaProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Saved" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      },
+      "patch": {
+        "tags": ["Mahasiswa Profile"],
+        "summary": "Update sebagian data profil mahasiswa",
+        "description": "Update data profil mahasiswa secara partial.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID user (mahasiswa)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nim": { "type": "string" },
+                  "tanggal_lahir": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "alamat": { "type": "string" },
+                  "angkatan": { "type": "integer" },
+                  "status": {
+                    "type": "string",
+                    "enum": ["aktif", "nonaktif", "cuti", "lulus"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil mahasiswa berhasil diperbarui (partial)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Profil mahasiswa berhasil diperbarui",
+                  "data": {
+                    "user_id": 7,
+                    "nim": "2256001",
+                    "alamat": "Jl. Pahlawan No. 12, Bandung",
+                    "angkatan": 2023,
+                    "status": "cuti"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profil mahasiswa tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/users/{id}/profile-dosen": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lihat profil dosen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DosenProfile"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Buat/Update profil dosen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DosenProfile"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Saved" } }
+      },
+      "put": {
+        "tags": ["Dosen Profile"],
+        "summary": "Update profil dosen",
+        "description": "Update penuh data profil dosen berdasarkan user_id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID user (dosen)",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["nidn", "jabatan", "status"],
+                "properties": {
+                  "nidn": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "jabatan": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "keahlian": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["aktif", "nonaktif", "pensiun"]
+                  }
+                }
+              },
+              "example": {
+                "nidn": "123456789",
+                "jabatan": "Lektor Kepala",
+                "keahlian": "Kecerdasan Buatan",
+                "status": "aktif"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil dosen berhasil diperbarui (full update)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Profil dosen berhasil diperbarui",
+                  "data": {
+                    "user_id": 6,
+                    "nidn": "123456789",
+                    "jabatan": "Lektor Kepala",
+                    "keahlian": "Kecerdasan Buatan",
+                    "status": "aktif"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profil dosen tidak ditemukan"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Dosen Profile"],
+        "summary": "Update sebagian profil dosen",
+        "description": "Update sebagian data profil dosen berdasarkan user_id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID user (dosen)",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nidn": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "jabatan": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "keahlian": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["aktif", "nonaktif", "pensiun"]
+                  }
+                }
+              },
+              "example": {
+                "keahlian": "Sistem Informasi",
+                "status": "nonaktif"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profil dosen berhasil diperbarui (partial update)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Profil dosen berhasil diperbarui",
+                  "data": {
+                    "user_id": 6,
+                    "nidn": "123456789",
+                    "jabatan": "Lektor Kepala",
+                    "keahlian": "Sistem Informasi",
+                    "status": "nonaktif"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profil dosen tidak ditemukan"
+          }
+        }
+      }
+    },
+
+    "/fakultas": {
+      "get": {
+        "tags": ["Fakultas"],
+        "summary": "List fakultas",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Fakultas"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Fakultas"],
+        "summary": "Buat fakultas",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Fakultas"
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/fakultas/{id}": {
+      "get": {
+        "tags": ["Fakultas"],
+        "summary": "Detail fakultas",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Fakultas"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Fakultas"],
+        "summary": "Ubah fakultas",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Fakultas"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Fakultas"],
+        "summary": "Hapus fakultas",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/prodi": {
+      "get": {
+        "tags": ["Prodi"],
+        "summary": "List prodi",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "fakultas_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Prodi"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Prodi"],
+        "summary": "Buat prodi",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Prodi" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/prodi/{id}": {
+      "get": {
+        "tags": ["Prodi"],
+        "summary": "Detail prodi",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Prodi"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Prodi"],
+        "summary": "Ubah prodi",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Prodi" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Prodi"],
+        "summary": "Hapus prodi",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/jurusan": {
+      "get": {
+        "tags": ["Jurusan"],
+        "summary": "List jurusan",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "prodi_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Jurusan"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Jurusan"],
+        "summary": "Buat jurusan",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Jurusan" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/jurusan/{id}": {
+      "get": {
+        "tags": ["Jurusan"],
+        "summary": "Detail jurusan",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Jurusan"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Jurusan"],
+        "summary": "Ubah jurusan",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Jurusan" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Jurusan"],
+        "summary": "Hapus jurusan",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/tahun-akademik": {
+      "get": {
+        "tags": ["Tahun Akademik"],
+        "summary": "List tahun akademik",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "is_aktif",
+            "in": "query",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TahunAkademik"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Tahun Akademik"],
+        "summary": "Buat tahun akademik",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TahunAkademik"
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/tahun-akademik/{id}": {
+      "get": {
+        "tags": ["Tahun Akademik"],
+        "summary": "Detail",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TahunAkademik"
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Tahun Akademik"],
+        "summary": "Ubah",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TahunAkademik"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Tahun Akademik"],
+        "summary": "Hapus",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/tahun-akademik/{id}/set-aktif": {
+      "post": {
+        "tags": ["Tahun Akademik"],
+        "summary": "Set aktif (nonaktifkan yang lain)",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+
+    "/mata-kuliah": {
+      "get": {
+        "tags": ["Mata Kuliah"],
+        "summary": "List mata kuliah",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "prodi_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MataKuliah"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Mata Kuliah"],
+        "summary": "Buat mata kuliah",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MataKuliah"
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/mata-kuliah/{id}": {
+      "get": {
+        "tags": ["Mata Kuliah"],
+        "summary": "Detail",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MataKuliah"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Mata Kuliah"],
+        "summary": "Ubah",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MataKuliah"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Mata Kuliah"],
+        "summary": "Hapus",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/jadwal-kuliah": {
+      "get": {
+        "tags": ["Jadwal Kuliah"],
+        "summary": "List jadwal",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "prodi_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "tahun_akademik_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "dosen_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JadwalKuliah"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Jadwal Kuliah"],
+        "summary": "Buat jadwal",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JadwalKuliah"
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/jadwal-kuliah/{id}": {
+      "get": {
+        "tags": ["Jadwal Kuliah"],
+        "summary": "Detail",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JadwalKuliah"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Jadwal Kuliah"],
+        "summary": "Ubah",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JadwalKuliah"
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Updated" } }
+      },
+      "delete": {
+        "tags": ["Jadwal Kuliah"],
+        "summary": "Hapus",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/krs": {
+      "get": {
+        "tags": ["KRS"],
+        "summary": "List KRS (by mahasiswa/TA)",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "mahasiswa_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "tahun_akademik_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["Draft", "Submitted", "Approved"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KRS"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["KRS"],
+        "summary": "Buat KRS (Draft)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["mahasiswa_id", "tahun_akademik_id"],
+                "type": "object",
+                "properties": {
+                  "mahasiswa_id": { "type": "integer" },
+                  "tahun_akademik_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/krs/{id}": {
+      "get": {
+        "tags": ["KRS"],
+        "summary": "Detail KRS",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/KRS" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["KRS"],
+        "summary": "Hapus KRS (Draft saja)",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/krs/{id}/submit": {
+      "post": {
+        "tags": ["KRS"],
+        "summary": "Submit KRS",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": { "description": "Submitted" },
+          "409": {
+            "description": "Tidak dapat submit (di luar periode KRS / tidak Draft)"
+          }
+        }
+      }
+    },
+    "/krs/{id}/approve": {
+      "post": {
+        "tags": ["KRS"],
+        "summary": "Approve KRS (Wali/Kaprodi/TU)",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "200": { "description": "Approved" } },
+        "x-roles": ["TU Prodi", "Kaprodi", "Dosen (Wali)"]
+      }
+    },
+    "/krs/{id}/detail": {
+      "get": {
+        "tags": ["KRS"],
+        "summary": "List detail KRS",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KRSDetail"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["KRS"],
+        "summary": "Tambah detail KRS",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["jadwal_kuliah_id"],
+                "type": "object",
+                "properties": {
+                  "jadwal_kuliah_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+    "/krs/{id}/detail/{detailId}": {
+      "delete": {
+        "tags": ["KRS"],
+        "summary": "Hapus detail KRS",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "detailId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+
+    "/nilai": {
+      "get": {
+        "tags": ["Nilai"],
+        "summary": "List nilai (filterable)",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "mahasiswa_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "jadwal_kuliah_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Nilai"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Nilai"],
+        "summary": "Input/Update nilai oleh dosen",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["mahasiswa_id", "jadwal_kuliah_id"],
+                "type": "object",
+                "properties": {
+                  "mahasiswa_id": { "type": "integer" },
+                  "jadwal_kuliah_id": { "type": "integer" },
+                  "tugas": { "type": "number" },
+                  "uts": { "type": "number" },
+                  "uas": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/nilai/{id}": {
+      "get": {
+        "tags": ["Nilai"],
+        "summary": "Detail nilai",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nilai"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Nilai"],
+        "summary": "Hapus nilai",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/nilai/{id}/finalize": {
+      "post": {
+        "tags": ["Nilai"],
+        "summary": "Hitung & kunci nilai akhir (periode nilai)",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": { "description": "Finalized" },
+          "409": { "description": "Di luar periode nilai" }
+        }
+      }
+    },
+
+    "/khs": {
+      "get": {
+        "summary": "List KHS",
+        "parameters": [
+          {
+            "name": "mahasiswa_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "tahun_akademik_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar KHS mahasiswa"
+          }
+        }
+      }
+    },
+
+    "/khs/{id}": {
+      "get": {
+        "summary": "Detail KHS",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detail data KHS" },
+          "404": { "description": "Data tidak ditemukan" }
+        }
+      }
+    },
+
+    "/khs/{id}/detail": {
+      "get": {
+        "summary": "Daftar mata kuliah dalam KHS",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Daftar mata kuliah dalam KHS" }
+        }
+      }
+    },
+
+    "/khs/{id}/download": {
+      "get": {
+        "summary": "Download KHS dalam bentuk PDF",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "File PDF KHS" }
+        }
+      }
+    },
+
+    "/khs/generate": {
+      "post": {
+        "summary": "Generate KHS dari nilai mahasiswa (tambahan)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mahasiswa_id": { "type": "integer" },
+                  "tahun_akademik_id": { "type": "integer" }
+                },
+                "required": ["mahasiswa_id", "tahun_akademik_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "KHS berhasil digenerate" },
+          "404": {
+            "description": "Nilai belum ada untuk semester ini"
+          }
+        }
+      }
+    },
+
+    "/khs/ipk/{mahasiswa_id}": {
+      "get": {
+        "summary": "Hitung IPK kumulatif (tambahan)",
+        "parameters": [
+          {
+            "name": "mahasiswa_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Nilai IPK kumulatif mahasiswa" }
+        }
+      }
+    },
+
+    "/materi-kuliah": {
+      "get": {
+        "summary": "List Materi Kuliah",
+        "parameters": [
+          {
+            "name": "jadwal_kuliah_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar materi kuliah"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload Materi Kuliah",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "jadwal_kuliah_id": { "type": "integer" },
+                  "judul": { "type": "string" },
+                  "deskripsi": { "type": "string" },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": ["jadwal_kuliah_id", "judul", "file"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Materi berhasil diupload" },
+          "400": { "description": "Validasi gagal" }
+        }
+      }
+    },
+    "/materi-kuliah/{id}": {
+      "get": {
+        "summary": "Detail Materi Kuliah",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Detail materi kuliah" },
+          "404": { "description": "Data tidak ditemukan" }
+        }
+      },
+      "put": {
+        "summary": "Update Materi Kuliah",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "judul": { "type": "string" },
+                  "deskripsi": { "type": "string" },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Materi berhasil diperbarui" },
+          "404": { "description": "Data tidak ditemukan" }
+        }
+      },
+      "delete": {
+        "summary": "Hapus Materi Kuliah",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Materi berhasil dihapus" },
+          "404": { "description": "Data tidak ditemukan" }
+        }
+      }
+    },
+
+    "/dokumen-akademik": {
+      "get": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "List dokumen",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["Pending", "Approved", "Rejected"]
+            }
+          },
+          {
+            "name": "jenis_dokumen",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DokumenAkademik"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "Upload dokumen (multipart)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["jenis_dokumen", "file"],
+                "properties": {
+                  "jenis_dokumen": { "type": "string" },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Uploaded" } }
+      }
+    },
+    "/dokumen-akademik/{id}": {
+      "get": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "Detail dokumen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DokumenAkademik"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "Hapus dokumen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "204": { "description": "Deleted" } }
+      }
+    },
+    "/dokumen-akademik/{id}/approve": {
+      "post": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "Approve dokumen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "200": { "description": "Approved" } },
+        "x-roles": ["Dekan", "Kaprodi"]
+      }
+    },
+    "/dokumen-akademik/{id}/reject": {
+      "post": {
+        "tags": ["Dokumen Akademik"],
+        "summary": "Reject dokumen",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "alasan": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Rejected" } }
+      }
+    },
+
+    "/dashboard/super-admin": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkas Super Admin",
+        "responses": {
+          "200": {
+            "description": "Statistik sistem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_user": { "type": "integer" },
+                    "total_fakultas": { "type": "integer" },
+                    "total_prodi": { "type": "integer" },
+                    "total_mahasiswa": {
+                      "type": "integer"
+                    },
+                    "total_dosen": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/fakultas/{id}": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkas Fakultas",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "Statistik fakultas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_prodi": { "type": "integer" },
+                    "total_dosen": { "type": "integer" },
+                    "total_mahasiswa": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/prodi/{id}": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkas Prodi",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "Statistik prodi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total_jurusan": { "type": "integer" },
+                    "total_mahasiswa": {
+                      "type": "integer"
+                    },
+                    "total_dosen": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/dosen": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkas Dosen",
+        "responses": {
+          "200": {
+            "description": "Statistik dosen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "jumlah_kelas_diampu": {
+                      "type": "integer"
+                    },
+                    "jumlah_mahasiswa_bimbingan": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/mahasiswa": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Ringkas Mahasiswa",
+        "responses": {
+          "200": {
+            "description": "Info akademik",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ipk": { "type": "number" },
+                    "sks": { "type": "integer" },
+                    "notifikasi": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/monitoring/log-aktivitas": {
+      "get": {
+        "tags": ["Monitoring"],
+        "summary": "Log aktivitas",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "aksi",
+            "in": "query",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "user_id": { "type": "integer" },
+                      "aksi": { "type": "string" },
+                      "entitas": { "type": "string" },
+                      "payload": { "type": "object" },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/backup/export": {
+      "get": {
+        "tags": ["Backup & Restore"],
+        "summary": "Export data (zip)",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["csv", "sql", "xlsx"],
+              "default": "csv"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File ZIP",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "x-roles": ["Super Admin"]
+      }
+    },
+    "/backup/import": {
+      "post": {
+        "tags": ["Backup & Restore"],
+        "summary": "Import data (zip)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "202": { "description": "Import dijalankan" } },
+        "x-roles": ["Super Admin"]
+      }
+    },
+
+    "/yudisium": {
+      "get": {
+        "tags": ["Yudisium"],
+        "summary": "List data yudisium",
+        "parameters": [
+          { "$ref": "#/components/parameters/PageParam" },
+          { "$ref": "#/components/parameters/PerPageParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Yudisium" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Yudisium"],
+        "summary": "Buat data yudisium",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "required": ["mahasiswa_id", "ipk"],
+                "type": "object",
+                "properties": {
+                  "mahasiswa_id": { "type": "integer" },
+                  "ipk": { "type": "number" },
+                  "nilai_sidang": { "type": "number" },
+                  "pembimbing_id": { "type": "integer" },
+                  "penguji_id": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Created" } }
+      }
+    },
+
+    "/yudisium/{id}/approve": {
+      "post": {
+        "tags": ["Yudisium"],
+        "summary": "Approve yudisium",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": { "200": { "description": "Approved" } },
+        "x-roles": ["Dekan", "Kaprodi"]
+      }
+    },
+
+    "/yudisium/{id}/reject": {
+      "post": {
+        "tags": ["Yudisium"],
+        "summary": "Reject yudisium",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": { "alasan": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Rejected" } }
+      }
+    },
+
+    "/yudisium/{id}/check-eligibility": {
+      "get": {
+        "tags": ["Yudisium"],
+        "summary": "Cek kelayakan mahasiswa lulus",
+        "parameters": [{ "$ref": "#/components/parameters/ID" }],
+        "responses": {
+          "200": {
+            "description": "Hasil cek kelayakan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "is_eligible": { "type": "boolean" },
+                    "reason": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
+  }
 }

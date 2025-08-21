@@ -68,11 +68,7 @@ async function fetchApi(endpoint, options = {}) {
     if (error instanceof ApiError) {
       throw error;
     }
-    // If network error in development, fall back to mock data
-    if (process.env.NODE_ENV === "development") {
-      console.warn("Backend not available, using mock data:", error.message);
-      return handleMockApi(endpoint, options);
-    }
+    // No mock data fallback - always throw network errors
     throw new ApiError("Network error", 0, { message: error.message });
   }
 }
@@ -141,7 +137,10 @@ export async function getUsers(params = {}) {
   });
 
   const query = searchParams.toString();
-  return await fetchApi(`/users${query ? `?${query}` : ""}`);
+  const result = await fetchApi(`/users${query ? `?${query}` : ""}`);
+
+  // Ensure we always return an array for data safety
+  return Array.isArray(result) ? result : (result?.data && Array.isArray(result.data)) ? result.data : [];
 }
 
 export async function createUser(userData) {
@@ -651,9 +650,23 @@ export async function deleteMateriKuliah(id) {
   });
 }
 
-// Nilai Management (for Dosen)
+// Nilai Management - sesuai API spec sim.json
 export async function getNilai(params = {}) {
   const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return await fetchApi(`/nilai${query ? `?${query}` : ""}`);
+}
+
+// Get nilai by jadwal kuliah (for Kaprodi validation)
+export async function getNilaiByJadwal(jadwalKuliahId, params = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.append("jadwal_kuliah_id", jadwalKuliahId);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       searchParams.append(key, value);
@@ -678,16 +691,54 @@ export async function updateNilai(id, nilaiData) {
   });
 }
 
+// Finalize nilai - sesuai API spec sim.json
 export async function finalizeNilai(id) {
   return await fetchApi(`/nilai/${id}/finalize`, {
     method: "POST",
   });
 }
 
+export async function deleteNilai(id) {
+  return await fetchApi(`/nilai/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export async function getNilaiDetail(id) {
+  return await fetchApi(`/nilai/${id}`);
+}
+
+// Jadwal Kuliah Management
+export async function getJadwalKuliah(params = {}) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return await fetchApi(`/jadwal-kuliah${query ? `?${query}` : ""}`);
+}
+
 // Jadwal Kuliah for Dosen
 export async function getJadwalKuliahByDosen(dosenId, params = {}) {
   const searchParams = new URLSearchParams();
   searchParams.append("dosen_id", dosenId);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  return await fetchApi(`/jadwal-kuliah${query ? `?${query}` : ""}`);
+}
+
+// Jadwal Kuliah for Prodi (Kaprodi)
+export async function getJadwalKuliahByProdi(prodiId, params = {}) {
+  const searchParams = new URLSearchParams();
+  searchParams.append("prodi_id", prodiId);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
       searchParams.append(key, value);
@@ -870,9 +921,62 @@ export async function getMahasiswaDokumen(mahasiswaId, params = {}) {
   return await fetchApi(`/dokumen-akademik${query ? `?${query}` : ""}`);
 }
 
+// KHS Detail - sesuai API spec sim.json
+export async function getKhsDetailData(khsId) {
+  return await fetchApi(`/khs/${khsId}/detail`);
+}
+
+// Yudisium Management - sesuai API spec sim.json
+export async function getYudisium(params = {}) {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, value);
+    }
+  });
+
+  const query = searchParams.toString();
+  const result = await fetchApi(`/yudisium${query ? `?${query}` : ""}`);
+
+  // Ensure we always return an array for data safety
+  if (Array.isArray(result)) {
+    return result;
+  } else if (result && Array.isArray(result.data)) {
+    return result.data;
+  } else if (result && result.data) {
+    return [result.data];
+  } else {
+    return [];
+  }
+}
+
+export async function createYudisium(yudisiumData) {
+  return await fetchApi("/yudisium", {
+    method: "POST",
+    body: yudisiumData,
+  });
+}
+
+export async function approveYudisium(id) {
+  return await fetchApi(`/yudisium/${id}/approve`, {
+    method: "POST",
+  });
+}
+
+export async function rejectYudisium(id, alasan = "") {
+  return await fetchApi(`/yudisium/${id}/reject`, {
+    method: "POST",
+    body: alasan ? { alasan } : {},
+  });
+}
+
+export async function checkYudisiumEligibility(id) {
+  return await fetchApi(`/yudisium/${id}/check-eligibility`);
+}
+
 // Mock API handler for development
 async function handleMockApi(endpoint, options = {}) {
-  const { mockData, dashboardData, delay } = await import("./mock-data");
+  const { mockData, dashboardData, delay, mockJadwalKuliah, mockNilai } = await import("./mock-data");
 
   // Simulate API delay
   await delay(200);
@@ -893,6 +997,19 @@ async function handleMockApi(endpoint, options = {}) {
   }
 
   if (endpoint.startsWith("/dashboard/prodi/")) {
+    // Extract prodi_id from endpoint /dashboard/prodi/{id}
+    const match = endpoint.match(/\/dashboard\/prodi\/(\d+)/);
+    if (match) {
+      const prodiId = parseInt(match[1]);
+      console.log("Mock API: Dashboard prodi requested for ID:", prodiId);
+
+      // Return mock data sesuai API spec sim.json
+      return {
+        total_jurusan: dashboardData.kaprodi.total_jurusan,
+        total_mahasiswa: dashboardData.kaprodi.total_mahasiswa,
+        total_dosen: dashboardData.kaprodi.total_dosen
+      };
+    }
     return dashboardData.kaprodi;
   }
 
@@ -1002,6 +1119,102 @@ async function handleMockApi(endpoint, options = {}) {
           created_at: "2024-01-25T09:15:00Z",
         },
       ];
+    }
+  }
+
+  // Handle jadwal kuliah endpoints
+  if (endpoint.startsWith("/jadwal-kuliah")) {
+    if (method === "GET") {
+      // Parse query parameters
+      const url = new URL(endpoint, "http://localhost");
+      const params = Object.fromEntries(url.searchParams.entries());
+
+      console.log("Mock API - Jadwal kuliah endpoint called with params:", params);
+
+      let filteredJadwal = [...mockJadwalKuliah];
+
+      // Filter by prodi_id
+      if (params.prodi_id) {
+        filteredJadwal = filteredJadwal.filter(jadwal =>
+          jadwal.mata_kuliah.prodi_id === parseInt(params.prodi_id)
+        );
+      }
+
+      // Filter by dosen_id
+      if (params.dosen_id) {
+        filteredJadwal = filteredJadwal.filter(jadwal =>
+          jadwal.dosen_id === parseInt(params.dosen_id)
+        );
+      }
+
+      // Filter by tahun_akademik_id
+      if (params.tahun_akademik_id) {
+        filteredJadwal = filteredJadwal.filter(jadwal =>
+          jadwal.tahun_akademik_id === parseInt(params.tahun_akademik_id)
+        );
+      }
+
+      console.log("Mock API - Filtered jadwal result:", filteredJadwal);
+      return filteredJadwal;
+    }
+  }
+
+  // Handle nilai endpoints
+  if (endpoint.startsWith("/nilai")) {
+    if (method === "GET") {
+      // Parse query parameters
+      const url = new URL(endpoint, "http://localhost");
+      const params = Object.fromEntries(url.searchParams.entries());
+
+      console.log("Mock API - Nilai endpoint called with params:", params);
+
+      let filteredNilai = [...mockNilai];
+
+      // Filter by jadwal_kuliah_id
+      if (params.jadwal_kuliah_id) {
+        filteredNilai = filteredNilai.filter(nilai =>
+          nilai.jadwal_kuliah_id === parseInt(params.jadwal_kuliah_id)
+        );
+      }
+
+      // Filter by mahasiswa_id
+      if (params.mahasiswa_id) {
+        filteredNilai = filteredNilai.filter(nilai =>
+          nilai.mahasiswa_id === parseInt(params.mahasiswa_id)
+        );
+      }
+
+      console.log("Mock API - Filtered nilai result:", filteredNilai);
+      return filteredNilai;
+    }
+
+    if (method === "POST") {
+      // Handle finalize endpoint
+      const finalizeMatch = endpoint.match(/\/nilai\/(\d+)\/finalize/);
+      if (finalizeMatch) {
+        const nilaiId = parseInt(finalizeMatch[1]);
+        console.log("Mock API - Finalizing nilai ID:", nilaiId);
+        return { message: "Nilai berhasil difinalisasi", id: nilaiId };
+      }
+
+      // Handle create/update nilai
+      const newNilai = {
+        id: Math.floor(Math.random() * 1000) + 100,
+        ...JSON.parse(options.body || "{}"),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      console.log("Mock API - Created/Updated nilai:", newNilai);
+      return newNilai;
+    }
+
+    if (method === "DELETE") {
+      const match = endpoint.match(/\/nilai\/(\d+)/);
+      if (match) {
+        const nilaiId = parseInt(match[1]);
+        console.log("Mock API - Deleted nilai ID:", nilaiId);
+        return { message: "Nilai berhasil dihapus" };
+      }
     }
   }
 
@@ -1229,6 +1442,144 @@ async function handleMockApi(endpoint, options = {}) {
         return mockData.tahunAkademik[index];
       }
       throw new ApiError("Tahun akademik tidak ditemukan", 404, {});
+    }
+  }
+
+  // Handle KHS detail endpoints
+  if (endpoint.startsWith("/khs/") && endpoint.includes("/detail")) {
+    if (method === "GET") {
+      const match = endpoint.match(/\/khs\/(\d+)\/detail/);
+      if (match) {
+        const khsId = parseInt(match[1]);
+        // Mock KHS detail with mata kuliah list
+        return [
+          {
+            id: 1,
+            mata_kuliah: {
+              id: 1,
+              kode_mk: "TI301",
+              nama_mk: "Pemrograman Web",
+              sks: 3
+            },
+            nilai_huruf: "A",
+            nilai_angka: 4.0,
+            nilai_akhir: 85
+          },
+          {
+            id: 2,
+            mata_kuliah: {
+              id: 2,
+              kode_mk: "TI302",
+              nama_mk: "Basis Data",
+              sks: 3
+            },
+            nilai_huruf: "B+",
+            nilai_angka: 3.5,
+            nilai_akhir: 80
+          }
+        ];
+      }
+    }
+  }
+
+  // Handle yudisium endpoints
+  if (endpoint.startsWith("/yudisium")) {
+    if (method === "GET") {
+      // Parse query parameters for filtering
+      const url = new URL(endpoint, "http://localhost");
+      const params = Object.fromEntries(url.searchParams.entries());
+
+      // Check for eligibility endpoint
+      const eligibilityMatch = endpoint.match(/\/yudisium\/(\d+)\/check-eligibility/);
+      if (eligibilityMatch) {
+        const yudisiumId = parseInt(eligibilityMatch[1]);
+        // Mock eligibility check
+        return {
+          is_eligible: true,
+          reason: "Mahasiswa memenuhi semua syarat kelulusan"
+        };
+      }
+
+      // Mock yudisium data
+      const mockYudisium = [
+        {
+          id: 1,
+          mahasiswa_id: 7,
+          mahasiswa: {
+            nama: "John Doe",
+            nim: "2020001",
+            angkatan: "2020"
+          },
+          judul_skripsi: "Implementasi Machine Learning untuk Prediksi Cuaca",
+          pembimbing_1: "Dr. Ahmad Rizki",
+          pembimbing_2: "Prof. Sari Indah",
+          penguji_1: "Dr. Budi Santoso",
+          penguji_2: "Dr. Rina Kusuma",
+          ipk: 3.65,
+          nilai_sidang: 85,
+          total_sks: 144,
+          status: "Pending",
+          created_at: "2024-01-22T10:00:00Z",
+          updated_at: "2024-01-22T10:00:00Z"
+        },
+        {
+          id: 2,
+          mahasiswa_id: 8,
+          mahasiswa: {
+            nama: "Jane Smith",
+            nim: "2020002",
+            angkatan: "2020"
+          },
+          judul_skripsi: "Sistem Informasi Manajemen Perpustakaan Berbasis Web",
+          pembimbing_1: "Dr. Budi Santoso",
+          pembimbing_2: "M.Kom. Lisa Dewi",
+          penguji_1: "Dr. Ahmad Rizki",
+          penguji_2: "Dr. Rina Kusuma",
+          ipk: 3.75,
+          nilai_sidang: 88,
+          total_sks: 144,
+          status: "Approved",
+          created_at: "2024-01-19T14:30:00Z",
+          updated_at: "2024-01-21T09:15:00Z"
+        }
+      ];
+
+      // Filter by status if specified
+      let filteredYudisium = mockYudisium;
+      if (params.status) {
+        filteredYudisium = mockYudisium.filter(y => y.status === params.status);
+      }
+
+      return filteredYudisium;
+    }
+
+    if (method === "POST") {
+      // Handle approve endpoint
+      const approveMatch = endpoint.match(/\/yudisium\/(\d+)\/approve/);
+      if (approveMatch) {
+        const yudisiumId = parseInt(approveMatch[1]);
+        console.log("Mock API - Approving yudisium ID:", yudisiumId);
+        return { message: "Yudisium berhasil disetujui", id: yudisiumId };
+      }
+
+      // Handle reject endpoint
+      const rejectMatch = endpoint.match(/\/yudisium\/(\d+)\/reject/);
+      if (rejectMatch) {
+        const yudisiumId = parseInt(rejectMatch[1]);
+        console.log("Mock API - Rejecting yudisium ID:", yudisiumId);
+        return { message: "Yudisium berhasil ditolak", id: yudisiumId };
+      }
+
+      // Handle create yudisium
+      const newYudisium = {
+        id: Math.floor(Math.random() * 1000) + 100,
+        ...JSON.parse(options.body || "{}"),
+        status: "Pending",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      console.log("Mock API - Created yudisium:", newYudisium);
+      return newYudisium;
     }
   }
 

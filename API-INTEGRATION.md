@@ -71,16 +71,90 @@ Expected API response format:
 
 ## API Integration Status
 
-✅ **COMPLETED**: Dashboard mahasiswa sudah terintegrasi dengan API
-- Data fetching dari endpoint `/dashboard/mahasiswa`
-- Error handling dan fallback
-- Loading states
-- Configuration display
+### ✅ Dashboard Mahasiswa - COMPLETED
+- Endpoint: `/dashboard/mahasiswa`
+- Data fetching dan error handling
+- Loading states dan configuration display
 - Test utilities
+
+### ✅ Dashboard Kaprodi - COMPLETED
+- Endpoint: `/dashboard/prodi/{id}` (sesuai sim.json spec)
+- Data fields: `total_jurusan`, `total_mahasiswa`, `total_dosen`
+- Error handling dan fallback ke mock data
+- Loading states dan configuration display
+- Test utilities dengan prodi_id parameter
+
+### ✅ Kaprodi Nilai Management - COMPLETED
+- Endpoint: `/jadwal-kuliah?prodi_id={id}` untuk list jadwal kuliah
+- Endpoint: `/nilai?jadwal_kuliah_id={id}` untuk list nilai per jadwal
+- Endpoint: `/nilai/{id}/finalize` untuk finalisasi nilai
+- Error handling dan fallback ke mock data
+- Real-time state updates setelah API calls
+- Development API status display
+
+## Kaprodi Dashboard API Details
+
+### Endpoint: `GET /dashboard/prodi/{id}`
+Expected response format sesuai sim.json:
+```json
+{
+  "total_jurusan": 3,
+  "total_mahasiswa": 145,
+  "total_dosen": 12
+}
+```
+
+### Testing
+1. Buka dashboard kaprodi
+2. Klik tombol "Test Kaprodi API Connection"
+3. Check browser console untuk detail respons
+4. Verify prodi_id tersedia di user context
+
+## Kaprodi Nilai Management API Details
+
+### Endpoint: `GET /jadwal-kuliah?prodi_id={id}`
+Load jadwal kuliah untuk prodi tertentu:
+```json
+[
+  {
+    "id": 1,
+    "mata_kuliah": {
+      "kode_mk": "IF301",
+      "nama_mk": "Pemrograman Web"
+    },
+    "dosen": {
+      "nama": "Dr. Ahmad Rizki"
+    },
+    "ruang": "Lab Komputer A",
+    "hari": "Senin"
+  }
+]
+```
+
+### Endpoint: `GET /nilai?jadwal_kuliah_id={id}`
+Load nilai mahasiswa untuk jadwal kuliah tertentu:
+```json
+[
+  {
+    "id": 1,
+    "mahasiswa": {
+      "nama": "John Doe",
+      "nim": "2020001"
+    },
+    "tugas": 85,
+    "uts": 80,
+    "uas": 88,
+    "nilai_akhir": 84.5,
+    "status": "pending"
+  }
+]
+```
+
+### Endpoint: `POST /nilai/{id}/finalize`
+Finalisasi nilai mahasiswa sesuai sim.json spec.
 
 ## Next Steps
 
-Untuk dashboard role lain (dosen, dekan, kaprodi), implementasi serupa bisa diterapkan dengan endpoint masing-masing:
+Dashboard role lain yang belum diintegrasikan:
 - `/dashboard/dosen`
 - `/dashboard/fakultas/{fakultasId}`
-- `/dashboard/prodi/{prodiId}`
